@@ -1,0 +1,102 @@
+# =============================================================================
+# BiOMNI Docker Image — full rebuild
+#
+# Builds a new base image from scratch with conda env and CLI tools.
+# This is a MANUAL process, not run in CI. The resulting image is pushed
+# to ECR and becomes the base for CI fast builds (see Dockerfile).
+#
+# Downloads pre-built tarballs from S3 (uploaded by pack_for_docker.sh),
+# or uses local tarballs if TARBALL_SOURCE=local.
+#
+# Usage:
+#   # From S3 (default — anyone can run this from any machine):
+#   docker build -f Dockerfile.full \
+#     --build-arg TARBALL_TAG=biomni-1.0.7 \
+#     -t biomni:local .
+#
+#   # From local tarballs (on the build host after pack_for_docker.sh):
+#   docker build -f Dockerfile.full \
+#     --build-arg TARBALL_SOURCE=local \
+#     -t biomni:local .
+#
+# Note: This uses ubuntu:22.04 because the conda env and bioinformatics
+# CLI tools (PLINK2, BWA, IQ-TREE, etc.) require glibc and system
+# libraries not available in Chainguard/Wolfi images. This Dockerfile
+# is only used for manual base image builds, never in CI.
+# =============================================================================
+
+FROM ubuntu:22.04
+
+ARG BAKE_DATA=false
+ARG TARBALL_TAG=biomni-1.0.6
+ARG TARBALL_SOURCE=s3
+ARG S3_BASE_URL=https://biomni-release.s3.amazonaws.com/docker-build
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PATH=/opt/conda/envs/biomni_e1/bin:/opt/biomni_tools/bin:$PATH \
+    BIOMNI_DATA_PATH=/workspace/data
+
+# 1. System libraries required by compiled conda packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libgl1-mesa-glx libglib2.0-0 libgomp1 \
+        libsm6 libxext6 libxrender1 \
+        libcairo2 libxt6 libharfbuzz0b libfribidi0 \
+        libfreetype6 libpng16-16 libtiff5 libjpeg8 \
+        ca-certificates curl perl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Download or copy pre-built conda environment, then unpack
+COPY biomni_e1.tar.g[z] /tmp/
+RUN if [ "$TARBALL_SOURCE" = "s3" ]; then \
+        echo "Downloading conda env from $S3_BASE_URL/$TARBALL_TAG/biomni_e1.tar.gz ..." && \
+        curl -fSL "$S3_BASE_URL/$TARBALL_TAG/biomni_e1.tar.gz" -o /tmp/biomni_e1.tar.gz; \
+    fi && \
+    mkdir -p /opt/conda/envs/biomni_e1 && \
+    tar -xzf /tmp/biomni_e1.tar.gz -C /opt/conda/envs/biomni_e1/ && \
+    rm -f /tmp/biomni_e1.tar.gz && \
+    /opt/conda/envs/biomni_e1/bin/conda-unpack
+
+# 3. Download or copy CLI bioinformatics tools
+COPY biomni_tools.tar.g[z] /tmp/
+RUN if [ "$TARBALL_SOURCE" = "s3" ]; then \
+        echo "Downloading CLI tools from $S3_BASE_URL/$TARBALL_TAG/biomni_tools.tar.gz ..." && \
+        curl -fSL "$S3_BASE_URL/$TARBALL_TAG/biomni_tools.tar.gz" -o /tmp/biomni_tools.tar.gz; \
+    fi && \
+    tar -xzf /tmp/biomni_tools.tar.gz -C /opt/ && \
+    rm -f /tmp/biomni_tools.tar.gz
+
+# 4. Install the BiOMNI Python package (source-only, deps already in env)
+WORKDIR /biomni
+COPY pyproject.toml MANIFEST.in README.md ./
+COPY biomni/ ./biomni/
+COPY biomni_env/ ./biomni_env/
+RUN pip install --no-deps -e .
+
+# 5. Optionally bake data lake into image
+RUN if [ "$BAKE_DATA" = "commercial" ]; then \
+        echo "=== Downloading commercial data lake (~7.9 GB) ===" && \
+        python -c "\
+from biomni.env_desc_cm import data_lake_dict; \
+from biomni.utils import check_and_download_s3_files; \
+check_and_download_s3_files( \
+    s3_bucket_url='https://biomni-release.s3.amazonaws.com', \
+    local_data_lake_path='/workspace/data/biomni_data/data_lake', \
+    expected_files=list(data_lake_dict.keys()), \
+    folder='data_lake')"; \
+    elif [ "$BAKE_DATA" = "all" ]; then \
+        echo "=== Downloading full data lake (~14 GB) ===" && \
+        python -c "\
+from biomni.env_desc import data_lake_dict; \
+from biomni.utils import check_and_download_s3_files; \
+check_and_download_s3_files( \
+    s3_bucket_url='https://biomni-release.s3.amazonaws.com', \
+    local_data_lake_path='/workspace/data/biomni_data/data_lake', \
+    expected_files=list(data_lake_dict.keys()), \
+    folder='data_lake')"; \
+    fi
+
+RUN echo 'export PATH=/opt/conda/envs/biomni_e1/bin:/opt/biomni_tools/bin:$PATH' >> /root/.bashrc
+
+EXPOSE 1984
+WORKDIR /workspace
+CMD ["python", "-m", "biomni.server"]

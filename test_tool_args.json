@@ -1,0 +1,2304 @@
+{
+    "fetch_supplementary_info_from_doi": {
+        "doi": "10.1038/s41586-020-2649-2"
+    },
+    "query_arxiv": {
+        "query": "CRISPR-Cas9 gene editing efficiency",
+        "max_papers": 3
+    },
+    "query_scholar": {
+        "query": "single cell RNA sequencing"
+    },
+    "query_pubmed": {
+        "query": "TP53 mutations in breast cancer",
+        "max_papers": 3
+    },
+    "search_google": {
+        "query": "NIH clinical trial guidelines 2024",
+        "num_results": 2
+    },
+    "extract_url_content": {
+        "url": "https://www.ncbi.nlm.nih.gov/gene/7157"
+    },
+    "extract_pdf_content": {
+        "url": "https://www.biorxiv.org/content/10.1101/2020.01.01.000000v1.full.pdf"
+    },
+    "advanced_web_search_claude": {
+        "query": "CRISPR base editing latest advances",
+        "max_searches": 1
+    },
+    "analyze_circular_dichroism_spectra": {
+        "sample_name": "Lysozyme",
+        "sample_type": "protein",
+        "wavelength_data": [
+            190,
+            195,
+            200,
+            205,
+            210,
+            215,
+            220,
+            225,
+            230,
+            235,
+            240,
+            245,
+            250
+        ],
+        "cd_signal_data": [
+            -5.2,
+            -8.1,
+            -11.3,
+            -7.5,
+            -15.6,
+            -12.1,
+            -18.4,
+            -10.2,
+            -5.3,
+            -2.1,
+            -0.5,
+            0.2,
+            0.1
+        ]
+    },
+    "analyze_rna_secondary_structure_features": {
+        "dot_bracket_structure": "((((....))))...(((...)))...((((.....))))",
+        "sequence": "GGCCAUUAGGGCCAAAGGGCCCUUUAAAGGGCCCCAUUUUGGGCC"
+    },
+    "analyze_protease_kinetics": {
+        "time_points": [
+            0,
+            30,
+            60,
+            90,
+            120,
+            180,
+            240,
+            300,
+            360,
+            420,
+            480,
+            540,
+            600
+        ],
+        "fluorescence_data": [
+            [
+                100,
+                250,
+                450,
+                680,
+                900,
+                1200,
+                1400,
+                1500,
+                1550,
+                1580,
+                1590,
+                1595,
+                1600
+            ],
+            [
+                100,
+                350,
+                700,
+                1100,
+                1500,
+                2100,
+                2500,
+                2750,
+                2900,
+                2950,
+                2980,
+                2990,
+                3000
+            ],
+            [
+                100,
+                500,
+                1000,
+                1600,
+                2300,
+                3200,
+                3800,
+                4200,
+                4500,
+                4600,
+                4650,
+                4680,
+                4700
+            ]
+        ],
+        "substrate_concentrations": [
+            10,
+            25,
+            50
+        ],
+        "enzyme_concentration": 0.5,
+        "output_dir": "/tmp/biomni_test/protease"
+    },
+    "analyze_enzyme_kinetics_assay": {
+        "enzyme_name": "Trypsin",
+        "substrate_concentrations": [
+            5,
+            10,
+            25,
+            50,
+            100,
+            200,
+            500
+        ],
+        "enzyme_concentration": 10.0,
+        "output_dir": "/tmp/biomni_test/enzyme_kinetics"
+    },
+    "analyze_itc_binding_thermodynamics": {
+        "temperature": 298.15,
+        "protein_concentration": 5e-05,
+        "ligand_concentration": 0.0005
+    },
+    "analyze_protein_conservation": {
+        "protein_sequences": ">Human_Insulin\nMALWMRLLPLLALLALWGPDPAAAFVNQHLCGSHLVEALYLVCGERGFFYTPKT\n>Mouse_Insulin\nMALWMRLLPLLALLALWGPDPAAAFVKQHLCGPHLVEALYLVCGERGFFYTPKS\n>Rat_Insulin\nMALWMRLLPLLALLVLWEPKPAQAFVKQHLCGPHLVEALYLVCGERGFFYTPKA",
+        "output_dir": "/tmp/biomni_test/conservation"
+    },
+    "analyze_cell_migration_metrics": {
+        "image_sequence_path": "/tmp/biomni_test/migration_images",
+        "pixel_size_um": 0.65,
+        "time_interval_min": 10
+    },
+    "perform_crispr_cas9_genome_editing": {
+        "guide_rna_sequences": [
+            "AGCTGATTCGATCGATCGAT",
+            "TCGATCGATCGATCGATCGA"
+        ],
+        "target_genomic_loci": "ATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCG",
+        "cell_tissue_type": "HEK293T"
+    },
+    "analyze_calcium_imaging_data": {
+        "image_stack_path": "/tmp/biomni_test/calcium_stack.tif",
+        "output_dir": "/tmp/biomni_test/calcium"
+    },
+    "analyze_in_vitro_drug_release_kinetics": {
+        "time_points": [
+            0,
+            1,
+            2,
+            4,
+            8,
+            12,
+            24,
+            48,
+            72,
+            96,
+            120,
+            168
+        ],
+        "concentration_data": [
+            0,
+            5.2,
+            12.8,
+            25.6,
+            42.1,
+            55.3,
+            72.4,
+            85.1,
+            91.2,
+            94.5,
+            96.8,
+            98.1
+        ],
+        "drug_name": "Doxorubicin",
+        "total_drug_loaded": 100.0,
+        "output_dir": "/tmp/biomni_test/drug_release"
+    },
+    "analyze_myofiber_morphology": {
+        "image_path": "/tmp/biomni_test/myofiber.tif",
+        "output_dir": "/tmp/biomni_test/myofiber"
+    },
+    "decode_behavior_from_neural_trajectories": {
+        "neural_data": [
+            [
+                0.1,
+                0.5,
+                0.3,
+                0.8,
+                0.2
+            ],
+            [
+                0.4,
+                0.2,
+                0.7,
+                0.1,
+                0.9
+            ],
+            [
+                0.6,
+                0.8,
+                0.1,
+                0.5,
+                0.3
+            ],
+            [
+                0.2,
+                0.3,
+                0.9,
+                0.4,
+                0.7
+            ],
+            [
+                0.9,
+                0.1,
+                0.4,
+                0.6,
+                0.5
+            ]
+        ],
+        "behavioral_data": [
+            [
+                1.0,
+                0.5
+            ],
+            [
+                2.0,
+                1.0
+            ],
+            [
+                3.0,
+                1.5
+            ],
+            [
+                4.0,
+                2.0
+            ],
+            [
+                5.0,
+                2.5
+            ]
+        ],
+        "n_components": 3,
+        "output_dir": "/tmp/biomni_test/neural"
+    },
+    "simulate_whole_cell_ode_model": {
+        "initial_conditions": {
+            "glucose": 5.0,
+            "atp": 2.0,
+            "nadh": 0.5,
+            "pyruvate": 0.1
+        },
+        "parameters": {
+            "k_glycolysis": 0.1,
+            "k_tca": 0.05,
+            "k_oxphos": 0.08,
+            "k_atp_consumption": 0.03
+        }
+    },
+    "predict_protein_disorder_regions": {
+        "protein_sequence": "MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR"
+    },
+    "analyze_cell_morphology_and_cytoskeleton": {
+        "image_path": "/tmp/biomni_test/cell_morphology.tif",
+        "output_dir": "/tmp/biomni_test/morphology"
+    },
+    "analyze_tissue_deformation_flow": {
+        "image_sequence": "/tmp/biomni_test/tissue_deformation/",
+        "output_dir": "/tmp/biomni_test/tissue_flow"
+    },
+    "find_n_glycosylation_motifs": {
+        "sequence": "MWVTKLLHAFLIDCGSANLSYNGNTSDIYGEVLDSGSTDYGAYRWDKYSRNRHHDSTFAGSVMYAVQEGDSATPITDVKPIEVKRSTTGNVTCYAKWYQRNTMNDGFNYSTYRSAQATGFEGNAEVHFQCIDSEGAYWKPVAMQNKN"
+    },
+    "predict_o_glycosylation_hotspots": {
+        "sequence": "MTSSSVRSTSTHTSTTTKSETTTSPTPSPTPSPTPSPTPMTSSTTSSSTTTSSPTTPSPTPSPSPTPSTSTTTTPSSPAQTEEVTTSSTTTPITTEQTPTTTPPQEKQPEPIQATSTPTPTTETTPASVTTAQETTQPTTTPPAET",
+        "window": 7,
+        "min_st_fraction": 0.3
+    },
+    "list_glycoengineering_resources": {},
+    "analyze_ddr_network_in_cancer": {
+        "expression_data_path": "/tmp/biomni_test/expression_data.csv",
+        "mutation_data_path": "/tmp/biomni_test/mutation_data.csv",
+        "output_dir": "/tmp/biomni_test/ddr_analysis"
+    },
+    "analyze_cell_senescence_and_apoptosis": {
+        "fcs_file_path": "/tmp/biomni_test/senescence.fcs"
+    },
+    "detect_and_annotate_somatic_mutations": {
+        "tumor_bam": "/tmp/biomni_test/tumor.bam",
+        "normal_bam": "/tmp/biomni_test/normal.bam",
+        "reference_genome": "/tmp/biomni_test/hg38.fa",
+        "output_prefix": "somatic_test"
+    },
+    "detect_and_characterize_structural_variations": {
+        "bam_file_path": "/tmp/biomni_test/sample.bam",
+        "reference_genome_path": "/tmp/biomni_test/hg38.fa",
+        "output_dir": "/tmp/biomni_test/sv_results"
+    },
+    "perform_gene_expression_nmf_analysis": {
+        "expression_data_path": "/tmp/biomni_test/expression_matrix.csv",
+        "n_components": 5,
+        "output_dir": "/tmp/biomni_test/nmf_results"
+    },
+    "analyze_copy_number_purity_ploidy_and_focal_events": {
+        "tumor_bam": "/tmp/biomni_test/tumor.bam",
+        "reference_genome": "/tmp/biomni_test/hg38.fa",
+        "output_dir": "/tmp/biomni_test/cnv_results"
+    },
+    "quantify_cell_cycle_phases_from_microscopy": {
+        "image_paths": [
+            "/tmp/biomni_test/cell_cycle_1.tif",
+            "/tmp/biomni_test/cell_cycle_2.tif"
+        ],
+        "output_dir": "/tmp/biomni_test/cell_cycle"
+    },
+    "quantify_and_cluster_cell_motility": {
+        "image_sequence_path": "/tmp/biomni_test/motility_images/",
+        "output_dir": "/tmp/biomni_test/motility",
+        "num_clusters": 3
+    },
+    "perform_facs_cell_sorting": {
+        "cell_suspension_data": "/tmp/biomni_test/facs_data.fcs",
+        "fluorescence_parameter": "GFP",
+        "threshold_min": 100.0,
+        "threshold_max": 10000.0
+    },
+    "analyze_flow_cytometry_immunophenotyping": {
+        "fcs_file_path": "/tmp/biomni_test/immunophenotyping.fcs",
+        "gating_strategy": {
+            "CD4_T_cells": [
+                [
+                    "CD3",
+                    ">",
+                    200
+                ],
+                [
+                    "CD4",
+                    ">",
+                    150
+                ]
+            ],
+            "CD8_T_cells": [
+                [
+                    "CD3",
+                    ">",
+                    200
+                ],
+                [
+                    "CD8",
+                    ">",
+                    150
+                ]
+            ]
+        },
+        "output_dir": "/tmp/biomni_test/immunophenotyping"
+    },
+    "analyze_mitochondrial_morphology_and_potential": {
+        "morphology_image_path": "/tmp/biomni_test/mito_morphology.tif",
+        "potential_image_path": "/tmp/biomni_test/mito_potential.tif",
+        "output_dir": "/tmp/biomni_test/mitochondria"
+    },
+    "annotate_open_reading_frames": {
+        "sequence": "ATGCCCAAGCTGAATAGCGTAGAGGGGAAAGAATGATCAGGATTTGGCCCCTTTCAATCGTAGAGCATCTTGAAGATCCTTCAATTAACTAGCAATGCCCTCGCCTTCTTACAGCAAAATCTTGCAGCCATGGGTGACAATCTAGAAGCATTCATG",
+        "min_length": 30
+    },
+    "annotate_plasmid": {
+        "sequence": "ATGACCATGATTACGCCAAGCTTGCATGCCTGCAGGTCGACTCTAGAGGATCCCGGGTACCGAGCTCGAATTCACTGGCCGTCGTTTTACAACGTCGTGACTGGGAAAACCCTGGCGTTACCCAACTTAATCGCCTTGCAGCACATCCCCCTTTCGCCAGCTGGCGTAATAGCGAAGAGGCCCGCACCGATCGCCCTTCCCAACAGTTGCGCAGCCTGAATGGCGAATGGCGCCTGATGCGGTATTTTCTCCTTACGCATCTGTGCGGTATTTCACACCGCATATGGTGCACTCTCAGTACAATCTGCTCTGATGCCGCATAGTTAAGCCAGCCCCGACACCCGCCAACACCCGCTGACGCGCCCTGACGGGCTTGTCTGCTCCCGGCATCCGCTTACAGACAAGCTGTGACCGTCTCCGGGAGCTGCATGTGTCAGAGGTTTTCACCGTCATCACCGAAACGCGCGAGACGAAAGGGCCTCGTGATACGCCTATTTTTATAGGTTAATGTCATGATAATAATGGTTTCTTAGACGTCAGGTGGCACTTTTCGGGGAAATGTGCGCGGAACCCCTATTTGTTTATTTTTCTAAATACATTCAAATATGTATCCGCTCATGA",
+        "is_circular": false
+    },
+    "get_gene_coding_sequence": {
+        "gene_name": "BRCA1",
+        "organism": "Homo sapiens",
+        "email": "test@example.com"
+    },
+    "get_plasmid_sequence": {
+        "identifier": "pUC19",
+        "is_addgene": false
+    },
+    "align_sequences": {
+        "long_seq": "ATGCCCAAGCTGAATAGCGTAGAGGGGAAAGAATGATCAGGATTTGGCCCCTTTCAATCGTAGAGCATCTTGAAGATCCTTCAATT",
+        "short_seqs": [
+            "ATGCCCAAGCTG",
+            "TCCTTCAATT"
+        ]
+    },
+    "pcr_simple": {
+        "sequence": "ATGCCCAAGCTGAATAGCGTAGAGGGGAAAGAATGATCAGGATTTGGCCCCTTTCAATCGTAGAGCATCTTGAAGATCCTTCAATTAACTAGCAATGCCCTCGCCTTCTTACAGCAAAATCTTGCAGCCATGGGTGACAATCTAGAAGCATTCATG",
+        "forward_primer": "ATGCCCAAGCTGAATAGC",
+        "reverse_primer": "CATGAATGCTTCTAGATTGTC"
+    },
+    "digest_sequence": {
+        "dna_sequence": "ATGCCCAAGCTGAATAGCGTAGAGGGGAAAGAATGATCAGGATTTGGCCCCTTTCAATCGTAGAATTCGCATCTTGAAGATCCTTCAATTAACTAGCAATGCCCTCGCCTTCTTACAGCAAAATCTTGCAGCCATGGAATTCGGTGACAATCTAGAAGCATTCATG",
+        "enzyme_names": [
+            "EcoRI",
+            "BamHI"
+        ]
+    },
+    "find_restriction_sites": {
+        "dna_sequence": "ATGCCCAAGCTGAATAGCGTAGAGGGGAAAGAATGATCAGGATTTGGCCCCTTTCAATCGAATTCGTAGAGCATCTTGAAGATCGATCCTTCAATTGGATCCAACTAGCAATGCCCTCGCCTTCTTACAGCAAAATCTTGCAGCCATG",
+        "enzymes": [
+            "EcoRI",
+            "BamHI",
+            "HindIII",
+            "NotI"
+        ]
+    },
+    "find_restriction_enzymes": {
+        "sequence": "ATGCCCAAGCTGAATAGCGTAGAGGGGAAAGAATGATCAGGATTTGGCCCCTTTCAATCGAATTCGTAGAGCATCTTGAAGATCGATCCTTCAATTGGATCCAACTAGCAATGCCCTCGCCTTCTTACAGCAAAATCTTGCAGCCATG"
+    },
+    "find_sequence_mutations": {
+        "query_sequence": "ATGCCCAAGCTGAATAGCGTAGAGGGGAAAGAATGATCAGGATTTGGCCCCTTTCAAT",
+        "reference_sequence": "ATGCCCAAGCTGAATAGCGTAGAGGGGAAAGAATGATCAGGATTTGGCCCCTTTCAAT"
+    },
+    "design_knockout_sgrna": {
+        "gene_name": "TP53",
+        "species": "human",
+        "num_guides": 3
+    },
+    "get_oligo_annealing_protocol": {},
+    "get_golden_gate_assembly_protocol": {
+        "enzyme_name": "BsaI",
+        "vector_length": 5000,
+        "num_inserts": 2
+    },
+    "get_bacterial_transformation_protocol": {
+        "antibiotic": "ampicillin"
+    },
+    "design_primer": {
+        "sequence": "ATGCCCAAGCTGAATAGCGTAGAGGGGAAAGAATGATCAGGATTTGGCCCCTTTCAATCGTAGAGCATCTTGAAGATCCTTCAATTAACTAGCAATGCCCTCGCCTTCTTACAGCAAAATCTTGCAGCCATGGGTGACAATCTAGAAGCATTCATG",
+        "start_pos": 0,
+        "primer_length": 20
+    },
+    "design_verification_primers": {
+        "plasmid_sequence": "ATGCCCAAGCTGAATAGCGTAGAGGGGAAAGAATGATCAGGATTTGGCCCCTTTCAATCGTAGAGCATCTTGAAGATCCTTCAATTAACTAGCAATGCCCTCGCCTTCTTACAGCAAAATCTTGCAGCCATGGGTGACAATCTAGAAGCATTCATGACCATGATTACGCCAAGCTTGCATGCCTGCAGGTCGACTCTAGAGGATCCCGGGTACCGAGCTCGAATTCACTGGCCGTCGTTTTACAACGTCGTGACTGGG",
+        "target_region": [
+            50,
+            200
+        ]
+    },
+    "design_golden_gate_oligos": {
+        "backbone_sequence": "ATGACCATGATTACGCCAAGCTTGCATGCCTGCAGGTCGACTCTAGAGGATCCCGGGTACCGAGCTCGAATTCACTGGCCGTCGTTTTACAACGTCGTGACTGGG",
+        "insert_sequence": "ATGCCCAAGCTGAATAGCGTAGAG",
+        "enzyme_name": "BsaI"
+    },
+    "golden_gate_assembly": {
+        "backbone_sequence": "ATGACCATGATTACGCCAAGCTTGCATGCCTGCAGGTCGACTCTAGAGGATCCCGGGTACCGAGCTCGAATTCACTGGCCGTCGTTTTACAACGTCGTGACTGGG",
+        "enzyme_name": "BsaI",
+        "fragments": [
+            {
+                "name": "insert1",
+                "sequence": "ATGCCCAAGCTGAATAGCGTAGAG"
+            }
+        ]
+    },
+    "liftover_coordinates": {
+        "chromosome": "1",
+        "position": 100000,
+        "input_format": "hg19",
+        "output_format": "hg38",
+        "data_path": "/tmp/biomni_test/liftover"
+    },
+    "bayesian_finemapping_with_deep_vi": {
+        "gwas_summary_path": "/tmp/biomni_test/gwas_summary.csv",
+        "ld_matrix": [
+            [
+                1.0,
+                0.8,
+                0.3
+            ],
+            [
+                0.8,
+                1.0,
+                0.5
+            ],
+            [
+                0.3,
+                0.5,
+                1.0
+            ]
+        ],
+        "n_iterations": 100
+    },
+    "analyze_cas9_mutation_outcomes": {
+        "reference_sequences": {
+            "target1": "ATGCCCAAGCTGAATAGCGTAGAGGGGAAAGAATGATCAGGATTTGGCCCCTTTCAAT"
+        },
+        "edited_sequences": {
+            "target1": {
+                "read1": "ATGCCCAAGCTGAATAGCGTAAGGGAAAGAATGATCAGGATTTGGCCCCTTTCAAT",
+                "read2": "ATGCCCAAGCTGAATAGCGTAGAGAAAGAATGATCAGGATTTGGCCCCTTTCAAT",
+                "read3": "ATGCCCAAGCTGAATAGCGTAGAGGGGAAAGAATGATCAGGATTTGGCCCCTTTCAAT"
+            }
+        }
+    },
+    "analyze_crispr_genome_editing": {
+        "original_sequence": "ATGCCCAAGCTGAATAGCGTAGAGGGGAAAGAATGATCAGGATTTGGCCCCTTTCAAT",
+        "edited_sequence": "ATGCCCAAGCTGAATAGCGTAGAGAAAGAATGATCAGGATTTGGCCCCTTTCAAT",
+        "guide_rna": "GCGTAGAGGGGAAAGAATGA"
+    },
+    "simulate_demographic_history": {
+        "num_samples": 5,
+        "sequence_length": 10000,
+        "recombination_rate": 1e-08,
+        "mutation_rate": 1e-08,
+        "demographic_model": "constant",
+        "random_seed": 42
+    },
+    "identify_transcription_factor_binding_sites": {
+        "sequence": "ATGCCCAAGCTGAATAGCGTAGAGGGGAAAGAATTTCTAGAAGATCAGGATTTGGCCCCTTTCAATCGTAGAGCATCTTGAAGATCCTTCAATT",
+        "tf_name": "GATA1",
+        "threshold": 0.7
+    },
+    "fit_genomic_prediction_model": {
+        "genotypes": [
+            [
+                0,
+                1,
+                2,
+                0,
+                1
+            ],
+            [
+                1,
+                0,
+                1,
+                2,
+                0
+            ],
+            [
+                2,
+                1,
+                0,
+                1,
+                1
+            ],
+            [
+                0,
+                2,
+                1,
+                0,
+                2
+            ],
+            [
+                1,
+                1,
+                0,
+                2,
+                1
+            ],
+            [
+                0,
+                0,
+                2,
+                1,
+                0
+            ],
+            [
+                2,
+                1,
+                1,
+                0,
+                1
+            ],
+            [
+                1,
+                2,
+                0,
+                1,
+                0
+            ]
+        ],
+        "phenotypes": [
+            12.5,
+            15.3,
+            10.1,
+            18.7,
+            14.2,
+            11.8,
+            16.4,
+            13.9
+        ],
+        "model_type": "additive"
+    },
+    "perform_pcr_and_gel_electrophoresis": {
+        "genomic_dna": "ATGCCCAAGCTGAATAGCGTAGAGGGGAAAGAATGATCAGGATTTGGCCCCTTTCAATCGTAGAGCATCTTGAAGATCCTTCAATTAACTAGCAATGCCCTCGCCTTCTTACAGCAAAATCTTGCAGCCATGGGTGACAATCTAGAAGCATTCATG",
+        "forward_primer": "ATGCCCAAGCTGAATAGC",
+        "reverse_primer": "CATGAATGCTTCTAGATTGTC"
+    },
+    "analyze_protein_phylogeny": {
+        "fasta_sequences": ">Human_Hemoglobin_Alpha\nMVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSH\n>Mouse_Hemoglobin_Alpha\nMVLSGEDKSNIKAAWGKIGGHAGEYGAEALERMFASFPTTKTYFPHFDVSH\n>Chicken_Hemoglobin_Alpha\nMVLSAADKNNVKGIFTKIAGHAEEYGAETLERMFITYPPTKTYFPHFDLSQ",
+        "output_dir": "/tmp/biomni_test/phylogeny"
+    },
+    "analyze_atac_seq_differential_accessibility": {
+        "treatment_bam": "/tmp/biomni_test/treatment_atac.bam",
+        "control_bam": "/tmp/biomni_test/control_atac.bam",
+        "output_dir": "/tmp/biomni_test/atac_results"
+    },
+    "analyze_bacterial_growth_curve": {
+        "time_points": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+        ],
+        "od_values": [
+            0.05,
+            0.06,
+            0.08,
+            0.15,
+            0.35,
+            0.72,
+            1.2,
+            1.65,
+            1.85,
+            1.92,
+            1.95,
+            1.96,
+            1.97
+        ],
+        "strain_name": "E. coli K-12 MG1655",
+        "output_dir": "/tmp/biomni_test/growth_curve"
+    },
+    "isolate_purify_immune_cells": {
+        "tissue_type": "spleen",
+        "target_cell_type": "T cells",
+        "enzyme_type": "collagenase",
+        "digestion_time_min": 45
+    },
+    "estimate_cell_cycle_phase_durations": {
+        "flow_cytometry_data": {
+            "time_points": [
+                0,
+                2,
+                4,
+                6,
+                8,
+                12,
+                16,
+                24
+            ],
+            "edu_positive_fraction": [
+                0.0,
+                0.05,
+                0.15,
+                0.28,
+                0.35,
+                0.42,
+                0.38,
+                0.32
+            ],
+            "brdu_positive_fraction": [
+                0.32,
+                0.35,
+                0.38,
+                0.4,
+                0.38,
+                0.35,
+                0.32,
+                0.3
+            ],
+            "double_positive_fraction": [
+                0.0,
+                0.02,
+                0.08,
+                0.15,
+                0.22,
+                0.28,
+                0.25,
+                0.2
+            ]
+        },
+        "initial_estimates": {
+            "G1_duration": 10.0,
+            "S_duration": 8.0,
+            "G2M_duration": 4.0,
+            "death_rate": 0.01
+        }
+    },
+    "track_immune_cells_under_flow": {
+        "image_sequence_path": "/tmp/biomni_test/immune_flow_images/",
+        "output_dir": "/tmp/biomni_test/immune_tracking",
+        "pixel_size_um": 0.65,
+        "time_interval_sec": 0.5,
+        "flow_direction": "right"
+    },
+    "analyze_cfse_cell_proliferation": {
+        "fcs_file_path": "/tmp/biomni_test/cfse_data.fcs"
+    },
+    "analyze_cytokine_production_in_cd4_tcells": {
+        "fcs_files_dict": {
+            "unstimulated": "/tmp/biomni_test/unstimulated.fcs",
+            "Mtb300": "/tmp/biomni_test/mtb300.fcs",
+            "CMV": "/tmp/biomni_test/cmv.fcs",
+            "SEB": "/tmp/biomni_test/seb.fcs"
+        },
+        "output_dir": "/tmp/biomni_test/cytokine_results"
+    },
+    "analyze_ebv_antibody_titers": {
+        "raw_od_data": {
+            "sample_001": {
+                "VCA_IgG": 1.85,
+                "VCA_IgM": 0.12,
+                "EA_IgG": 0.45,
+                "EA_IgM": 0.08,
+                "EBNA1_IgG": 2.1,
+                "EBNA1_IgM": 0.05
+            },
+            "sample_002": {
+                "VCA_IgG": 0.25,
+                "VCA_IgM": 1.92,
+                "EA_IgG": 1.65,
+                "EA_IgM": 0.95,
+                "EBNA1_IgG": 0.08,
+                "EBNA1_IgM": 0.03
+            }
+        },
+        "standard_curve_data": {
+            "VCA_IgG": [
+                [
+                    0,
+                    0.05
+                ],
+                [
+                    10,
+                    0.35
+                ],
+                [
+                    50,
+                    1.2
+                ],
+                [
+                    100,
+                    2.1
+                ],
+                [
+                    200,
+                    2.8
+                ]
+            ],
+            "VCA_IgM": [
+                [
+                    0,
+                    0.04
+                ],
+                [
+                    10,
+                    0.3
+                ],
+                [
+                    50,
+                    1.1
+                ],
+                [
+                    100,
+                    1.9
+                ],
+                [
+                    200,
+                    2.6
+                ]
+            ]
+        },
+        "sample_metadata": {
+            "sample_001": {
+                "group": "convalescent",
+                "collection_date": "2024-01-15"
+            },
+            "sample_002": {
+                "group": "acute",
+                "collection_date": "2024-01-20"
+            }
+        }
+    },
+    "analyze_cns_lesion_histology": {
+        "image_path": "/tmp/biomni_test/cns_lesion.tif",
+        "output_dir": "/tmp/biomni_test/cns_histology",
+        "stain_type": "H&E"
+    },
+    "analyze_immunohistochemistry_image": {
+        "image_path": "/tmp/biomni_test/ihc_sample.tif",
+        "protein_name": "Ki-67",
+        "output_dir": "/tmp/biomni_test/ihc_results"
+    },
+    "optimize_anaerobic_digestion_process": {
+        "waste_characteristics": {
+            "total_solids": 8.5,
+            "volatile_solids": 7.2,
+            "cod": 12000
+        },
+        "operational_parameters": {
+            "hrt": [
+                10,
+                30
+            ],
+            "olr": [
+                1.0,
+                5.0
+            ],
+            "if_ratio": [
+                0.5,
+                3.0
+            ],
+            "temperature": [
+                35,
+                55
+            ],
+            "ph": [
+                6.5,
+                7.5
+            ]
+        },
+        "target_output": "methane_yield"
+    },
+    "analyze_arsenic_speciation_hplc_icpms": {
+        "sample_data": {
+            "sample_1": {
+                "2.1": 1500,
+                "3.5": 8200,
+                "5.8": 3100,
+                "8.2": 950
+            },
+            "sample_2": {
+                "2.1": 2200,
+                "3.5": 5600,
+                "5.8": 4500,
+                "8.2": 1200
+            }
+        },
+        "sample_name": "Groundwater Well A"
+    },
+    "count_bacterial_colonies": {
+        "image_path": "/tmp/biomni_test/agar_plate.jpg",
+        "dilution_factor": 1000,
+        "output_dir": "/tmp/biomni_test/colony_count"
+    },
+    "annotate_bacterial_genome": {
+        "genome_file_path": "/tmp/biomni_test/genome.fasta",
+        "output_dir": "/tmp/biomni_test/annotation",
+        "genus": "Escherichia",
+        "species": "coli"
+    },
+    "enumerate_bacterial_cfu_by_serial_dilution": {
+        "initial_sample_volume_ml": 1.0,
+        "estimated_concentration": 100000000.0,
+        "dilution_factor": 10,
+        "num_dilutions": 8,
+        "spots_per_dilution": 3
+    },
+    "model_bacterial_growth_dynamics": {
+        "initial_population": 1000,
+        "growth_rate": 0.8,
+        "clearance_rate": 0.1,
+        "niche_size": 1000000000.0,
+        "simulation_time": 24,
+        "time_step": 0.1
+    },
+    "quantify_biofilm_biomass_crystal_violet": {
+        "od_values": [
+            0.05,
+            0.82,
+            1.45,
+            0.67,
+            1.12,
+            0.93,
+            0.04,
+            0.78
+        ],
+        "sample_names": [
+            "Blank",
+            "WT_1",
+            "WT_2",
+            "mutant_1",
+            "mutant_2",
+            "complement",
+            "Media_ctrl",
+            "WT_3"
+        ],
+        "control_index": 0
+    },
+    "segment_and_analyze_microbial_cells": {
+        "image_path": "/tmp/biomni_test/microbial_cells.tif",
+        "output_dir": "/tmp/biomni_test/microbial_segmentation"
+    },
+    "segment_cells_with_deep_learning": {
+        "image_path": "/tmp/biomni_test/cells_fluorescence.tif",
+        "model_type": "cyto",
+        "save_dir": "/tmp/biomni_test/cellpose_results"
+    },
+    "simulate_generalized_lotka_volterra_dynamics": {
+        "initial_abundances": [
+            100,
+            200,
+            50
+        ],
+        "growth_rates": [
+            0.5,
+            0.3,
+            0.4
+        ],
+        "interaction_matrix": [
+            [
+                -0.001,
+                -0.0005,
+                0.0002
+            ],
+            [
+                0.0003,
+                -0.001,
+                -0.0004
+            ],
+            [
+                -0.0001,
+                0.0003,
+                -0.001
+            ]
+        ],
+        "time_points": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            15,
+            20,
+            25,
+            30
+        ]
+    },
+    "predict_rna_secondary_structure": {
+        "rna_sequence": "GGGAAAUCCCUUUAAAGGGCCCAAAUUUGGGCCC",
+        "output_prefix": "test_rna"
+    },
+    "simulate_microbial_population_dynamics": {
+        "initial_populations": [
+            1000,
+            500
+        ],
+        "growth_rates": [
+            0.5,
+            0.3
+        ],
+        "clearance_rates": [
+            0.1,
+            0.05
+        ],
+        "carrying_capacities": [
+            10000,
+            8000
+        ],
+        "max_time": 50,
+        "num_simulations": 10
+    },
+    "analyze_aortic_diameter_and_geometry": {
+        "image_path": "/tmp/biomni_test/aorta_scan.dcm",
+        "output_dir": "/tmp/biomni_test/aorta_analysis"
+    },
+    "analyze_atp_luminescence_assay": {
+        "data_file": "/tmp/biomni_test/atp_luminescence.csv",
+        "standard_curve_file": "/tmp/biomni_test/atp_standards.csv"
+    },
+    "analyze_thrombus_histology": {
+        "image_path": "/tmp/biomni_test/thrombus_he.tif",
+        "output_dir": "/tmp/biomni_test/thrombus_analysis"
+    },
+    "analyze_intracellular_calcium_with_rhod2": {
+        "background_image_path": "/tmp/biomni_test/rhod2_background.tif",
+        "control_image_path": "/tmp/biomni_test/rhod2_control.tif",
+        "sample_image_path": "/tmp/biomni_test/rhod2_sample.tif",
+        "output_dir": "/tmp/biomni_test/calcium_rhod2"
+    },
+    "quantify_corneal_nerve_fibers": {
+        "image_path": "/tmp/biomni_test/corneal_nerves.tif",
+        "marker_type": "\u03b2III-tubulin",
+        "output_dir": "/tmp/biomni_test/corneal_nerves"
+    },
+    "segment_and_quantify_cells_in_multiplexed_images": {
+        "image_path": "/tmp/biomni_test/multiplexed.tif",
+        "markers_list": [
+            "DAPI",
+            "CD3",
+            "CD8",
+            "PD-L1",
+            "Ki67"
+        ],
+        "nuclear_channel_index": 0,
+        "output_dir": "/tmp/biomni_test/multiplexed_results"
+    },
+    "analyze_bone_microct_morphometry": {
+        "input_file_path": "/tmp/biomni_test/bone_microct.tif",
+        "output_dir": "/tmp/biomni_test/bone_morphometry"
+    },
+    "run_diffdock_with_smiles": {
+        "pdb_path": "/tmp/biomni_test/receptor.pdb",
+        "smiles_string": "CC(=O)Oc1ccccc1C(=O)O",
+        "local_output_dir": "/tmp/biomni_test/diffdock_results",
+        "use_gpu": false
+    },
+    "docking_autodock_vina": {
+        "smiles_list": [
+            "CC(=O)Oc1ccccc1C(=O)O",
+            "CC(=O)NC1=CC=C(O)C=C1"
+        ],
+        "receptor_pdb_file": "/tmp/biomni_test/receptor.pdb",
+        "box_center": [
+            10.0,
+            20.0,
+            30.0
+        ],
+        "box_size": [
+            20.0,
+            20.0,
+            20.0
+        ],
+        "ncpu": 1
+    },
+    "run_autosite": {
+        "pdb_file": "/tmp/biomni_test/protein.pdb",
+        "output_dir": "/tmp/biomni_test/autosite_results"
+    },
+    "retrieve_topk_repurposing_drugs_from_disease_txgnn": {
+        "disease_name": "asthma",
+        "k": 5
+    },
+    "predict_admet_properties": {
+        "smiles_list": [
+            "CC(=O)Oc1ccccc1C(=O)O",
+            "CC(=O)NC1=CC=C(O)C=C1",
+            "C1CCCCC1"
+        ],
+        "ADMET_model_type": "MPNN"
+    },
+    "predict_binding_affinity_protein_1d_sequence": {
+        "smiles_list": [
+            "CC(=O)Oc1ccccc1C(=O)O",
+            "CC(=O)NC1=CC=C(O)C=C1"
+        ],
+        "amino_acid_sequence": "MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR"
+    },
+    "analyze_accelerated_stability_of_pharmaceutical_formulations": {
+        "formulations": [
+            {
+                "name": "Formulation A",
+                "active_ingredient": "Compound X",
+                "concentration": 10.0,
+                "excipients": [
+                    "lactose",
+                    "microcrystalline cellulose"
+                ]
+            },
+            {
+                "name": "Formulation B",
+                "active_ingredient": "Compound X",
+                "concentration": 10.0,
+                "excipients": [
+                    "mannitol",
+                    "croscarmellose sodium"
+                ]
+            }
+        ],
+        "storage_conditions": [
+            {
+                "temperature": 25,
+                "humidity": 60,
+                "description": "Long-term"
+            },
+            {
+                "temperature": 40,
+                "humidity": 75,
+                "description": "Accelerated"
+            }
+        ],
+        "time_points": [
+            0,
+            30,
+            60,
+            90,
+            180
+        ]
+    },
+    "run_3d_chondrogenic_aggregate_assay": {
+        "chondrocyte_cells": {
+            "source": "human articular cartilage",
+            "passage_number": 2,
+            "cell_density": 250000
+        },
+        "test_compounds": [
+            {
+                "name": "TGF-beta3",
+                "concentration": "10 ng/mL",
+                "vehicle": "PBS"
+            },
+            {
+                "name": "BMP-2",
+                "concentration": "100 ng/mL",
+                "vehicle": "PBS"
+            }
+        ],
+        "culture_duration_days": 21,
+        "measurement_intervals": 7
+    },
+    "grade_adverse_events_using_vcog_ctcae": {
+        "clinical_data_file": "/tmp/biomni_test/adverse_events.csv"
+    },
+    "analyze_radiolabeled_antibody_biodistribution": {
+        "time_points": [
+            1,
+            4,
+            8,
+            24,
+            48,
+            72,
+            120,
+            168
+        ],
+        "tissue_data": {
+            "tumor": [
+                2.5,
+                8.3,
+                15.6,
+                22.1,
+                18.5,
+                14.2,
+                10.1,
+                7.5
+            ],
+            "blood": [
+                25.0,
+                18.2,
+                12.5,
+                6.8,
+                3.2,
+                1.8,
+                0.9,
+                0.5
+            ],
+            "liver": [
+                8.5,
+                12.1,
+                10.3,
+                7.5,
+                5.2,
+                3.8,
+                2.5,
+                1.8
+            ],
+            "kidney": [
+                6.2,
+                8.5,
+                7.1,
+                4.8,
+                3.1,
+                2.2,
+                1.5,
+                1.0
+            ],
+            "spleen": [
+                3.8,
+                5.2,
+                4.5,
+                3.2,
+                2.1,
+                1.5,
+                1.0,
+                0.7
+            ]
+        }
+    },
+    "estimate_alpha_particle_radiotherapy_dosimetry": {
+        "biodistribution_data": {
+            "tumor": [
+                [
+                    1,
+                    5.2
+                ],
+                [
+                    4,
+                    12.8
+                ],
+                [
+                    24,
+                    8.5
+                ],
+                [
+                    48,
+                    4.2
+                ],
+                [
+                    72,
+                    2.1
+                ]
+            ],
+            "kidney": [
+                [
+                    1,
+                    8.1
+                ],
+                [
+                    4,
+                    5.3
+                ],
+                [
+                    24,
+                    2.1
+                ],
+                [
+                    48,
+                    0.8
+                ],
+                [
+                    72,
+                    0.3
+                ]
+            ],
+            "liver": [
+                [
+                    1,
+                    6.5
+                ],
+                [
+                    4,
+                    4.2
+                ],
+                [
+                    24,
+                    1.8
+                ],
+                [
+                    48,
+                    0.6
+                ],
+                [
+                    72,
+                    0.2
+                ]
+            ],
+            "bone_marrow": [
+                [
+                    1,
+                    2.3
+                ],
+                [
+                    4,
+                    1.5
+                ],
+                [
+                    24,
+                    0.5
+                ],
+                [
+                    48,
+                    0.2
+                ],
+                [
+                    72,
+                    0.1
+                ]
+            ]
+        },
+        "radiation_parameters": {
+            "radionuclide": "Ac-225",
+            "half_life_hours": 240,
+            "energy_per_decay_MeV": 28.0,
+            "radiation_weighting_factor": 5,
+            "S_factors": {
+                "tumor": 0.00015,
+                "kidney": 0.00028,
+                "liver": 0.00012,
+                "bone_marrow": 0.00035
+            }
+        }
+    },
+    "perform_mwas_cyp2c19_metabolizer_status": {
+        "methylation_data_path": "/tmp/biomni_test/methylation_data.csv",
+        "metabolizer_status_path": "/tmp/biomni_test/metabolizer_status.csv"
+    },
+    "calculate_physicochemical_properties": {
+        "smiles_string": "CC(=O)Oc1ccccc1C(=O)O"
+    },
+    "analyze_xenograft_tumor_growth_inhibition": {
+        "data_path": "/tmp/biomni_test/xenograft_data.csv",
+        "time_column": "Day",
+        "volume_column": "Tumor_Volume_mm3",
+        "group_column": "Treatment_Group",
+        "subject_column": "Mouse_ID",
+        "output_dir": "/tmp/biomni_test/xenograft_analysis"
+    },
+    "analyze_pixel_distribution": {
+        "image_path": "/tmp/biomni_test/western_blot.png"
+    },
+    "find_roi_from_image": {
+        "image_path": "/tmp/biomni_test/western_blot.png",
+        "lower_threshold": 50,
+        "upper_threshold": 200,
+        "number_of_bands": 4
+    },
+    "analyze_western_blot": {
+        "blot_image_path": "/tmp/biomni_test/western_blot.png",
+        "target_bands": [
+            {
+                "name": "p53",
+                "roi": [
+                    50,
+                    100,
+                    80,
+                    30
+                ]
+            },
+            {
+                "name": "GAPDH",
+                "roi": [
+                    50,
+                    200,
+                    80,
+                    30
+                ]
+            }
+        ],
+        "loading_control_band": {
+            "name": "beta-actin",
+            "roi": [
+                50,
+                300,
+                80,
+                30
+            ]
+        },
+        "antibody_info": {
+            "primary": "mouse anti-p53 (DO-1)",
+            "secondary": "goat anti-mouse HRP"
+        }
+    },
+    "query_drug_interactions": {
+        "drug_names": [
+            "warfarin",
+            "aspirin",
+            "ibuprofen"
+        ]
+    },
+    "check_drug_combination_safety": {
+        "drug_list": [
+            "metformin",
+            "lisinopril",
+            "atorvastatin"
+        ],
+        "include_mechanisms": true,
+        "include_management": true
+    },
+    "analyze_interaction_mechanisms": {
+        "drug_pair": [
+            "warfarin",
+            "aspirin"
+        ],
+        "detailed_analysis": true
+    },
+    "find_alternative_drugs_ddinter": {
+        "target_drug": "warfarin",
+        "contraindicated_drugs": [
+            "aspirin",
+            "ibuprofen"
+        ]
+    },
+    "query_fda_adverse_events": {
+        "drug_name": "pembrolizumab",
+        "limit": 5
+    },
+    "get_fda_drug_label_info": {
+        "drug_name": "metformin"
+    },
+    "check_fda_drug_recalls": {
+        "drug_name": "ranitidine"
+    },
+    "analyze_fda_safety_signals": {
+        "drug_list": [
+            "nivolumab",
+            "pembrolizumab"
+        ]
+    },
+    "reconstruct_3d_face_from_mri": {
+        "mri_file_path": "/tmp/biomni_test/head_mri.nii.gz",
+        "output_dir": "/tmp/biomni_test/3d_face"
+    },
+    "analyze_abr_waveform_p1_metrics": {
+        "time_ms": [
+            0.0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0,
+            1.1,
+            1.2,
+            1.3,
+            1.4,
+            1.5,
+            1.6,
+            1.7,
+            1.8,
+            1.9,
+            2.0,
+            2.5,
+            3.0,
+            3.5,
+            4.0,
+            4.5,
+            5.0
+        ],
+        "amplitude_uv": [
+            0.0,
+            0.05,
+            0.12,
+            0.25,
+            0.45,
+            0.72,
+            0.85,
+            0.65,
+            0.3,
+            -0.1,
+            -0.35,
+            -0.42,
+            -0.3,
+            -0.15,
+            0.05,
+            0.2,
+            0.28,
+            0.18,
+            0.05,
+            -0.08,
+            -0.15,
+            -0.1,
+            0.05,
+            0.12,
+            0.08,
+            0.02,
+            0.0
+        ]
+    },
+    "analyze_ciliary_beat_frequency": {
+        "video_path": "/tmp/biomni_test/ciliary_video.avi",
+        "roi_count": 5,
+        "min_freq": 5,
+        "max_freq": 25,
+        "output_dir": "/tmp/biomni_test/ciliary_analysis"
+    },
+    "analyze_protein_colocalization": {
+        "channel1_path": "/tmp/biomni_test/channel1_gfp.tif",
+        "channel2_path": "/tmp/biomni_test/channel2_rfp.tif",
+        "output_dir": "/tmp/biomni_test/colocalization"
+    },
+    "perform_cosinor_analysis": {
+        "time_data": [
+            0,
+            2,
+            4,
+            6,
+            8,
+            10,
+            12,
+            14,
+            16,
+            18,
+            20,
+            22,
+            24,
+            26,
+            28,
+            30,
+            32,
+            34,
+            36,
+            38,
+            40,
+            42,
+            44,
+            46,
+            48
+        ],
+        "physiological_data": [
+            98.2,
+            97.8,
+            97.5,
+            97.2,
+            97.0,
+            97.3,
+            97.8,
+            98.5,
+            99.0,
+            99.3,
+            99.5,
+            99.2,
+            98.8,
+            98.0,
+            97.5,
+            97.2,
+            97.0,
+            97.3,
+            97.8,
+            98.5,
+            99.0,
+            99.3,
+            99.5,
+            99.2,
+            98.8
+        ],
+        "period": 24.0
+    },
+    "calculate_brain_adc_map": {
+        "dwi_file_path": "/tmp/biomni_test/dwi_data.nii.gz",
+        "b_values": [
+            0,
+            500,
+            1000
+        ]
+    },
+    "analyze_endolysosomal_calcium_dynamics": {
+        "time_points": [
+            0,
+            5,
+            10,
+            15,
+            20,
+            25,
+            30,
+            35,
+            40,
+            45,
+            50,
+            55,
+            60,
+            90,
+            120,
+            180,
+            240,
+            300
+        ],
+        "luminescence_values": [
+            100,
+            102,
+            105,
+            108,
+            112,
+            350,
+            520,
+            480,
+            420,
+            380,
+            340,
+            310,
+            285,
+            220,
+            180,
+            150,
+            130,
+            115
+        ],
+        "treatment_time": 22.0,
+        "cell_type": "HeLa",
+        "treatment_name": "GPN (200 uM)"
+    },
+    "analyze_fatty_acid_composition_by_gc": {
+        "gc_data_file": "/tmp/biomni_test/gc_fatty_acids.csv",
+        "tissue_type": "liver",
+        "sample_id": "SAMPLE_001"
+    },
+    "analyze_hemodynamic_data": {
+        "pressure_data": [
+            80,
+            82,
+            85,
+            90,
+            95,
+            100,
+            110,
+            118,
+            120,
+            118,
+            112,
+            105,
+            98,
+            92,
+            88,
+            84,
+            82,
+            80,
+            82,
+            85,
+            90,
+            95,
+            100,
+            110,
+            118,
+            120,
+            118,
+            112,
+            105,
+            98,
+            92,
+            88,
+            84,
+            82,
+            80
+        ],
+        "sampling_rate": 500.0
+    },
+    "simulate_thyroid_hormone_pharmacokinetics": {
+        "parameters": {
+            "transport_rates": {
+                "plasma_to_liver": 0.15,
+                "liver_to_plasma": 0.08,
+                "plasma_to_tissue": 0.05,
+                "tissue_to_plasma": 0.03
+            },
+            "binding_constants": {
+                "TBG": 10000000000.0,
+                "TTR": 100000000.0,
+                "albumin": 1000000.0
+            },
+            "metabolism_rates": {
+                "T4_to_T3": 0.02,
+                "T4_clearance": 0.01,
+                "T3_clearance": 0.03
+            },
+            "volumes": {
+                "plasma": 3.0,
+                "liver": 1.5,
+                "tissue": 40.0
+            }
+        },
+        "initial_conditions": {
+            "T4_plasma": 100.0,
+            "T3_plasma": 2.0,
+            "T4_liver": 50.0,
+            "T3_liver": 1.0,
+            "T4_tissue": 20.0,
+            "T3_tissue": 0.5
+        },
+        "time_span": [
+            0,
+            72
+        ],
+        "time_points": 200
+    },
+    "quantify_amyloid_beta_plaques": {
+        "image_path": "/tmp/biomni_test/amyloid_plaques.tif",
+        "output_dir": "/tmp/biomni_test/amyloid_analysis",
+        "threshold_method": "otsu"
+    },
+    "engineer_bacterial_genome_for_therapeutic_delivery": {
+        "bacterial_genome_file": "/tmp/biomni_test/ecoli_genome.fasta",
+        "genetic_parts": {
+            "promoter": "TTGACAATTAATCATCGAACTAGTTTAATTAA",
+            "gene": "ATGAAACAAAGCACTATTGCACTGGCTGTCTTACCGTTACTGTTTACCCCTGTGACAAAAGCC",
+            "terminator": "TTTTTTTGAATTTTTTTTT",
+            "cargo": "ATGCGTAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTTGAATTAGATGGTGATGTTAAT"
+        }
+    },
+    "analyze_bacterial_growth_rate": {
+        "time_points": [
+            0,
+            0.5,
+            1,
+            1.5,
+            2,
+            2.5,
+            3,
+            3.5,
+            4,
+            4.5,
+            5,
+            5.5,
+            6,
+            7,
+            8
+        ],
+        "od_measurements": [
+            0.01,
+            0.012,
+            0.018,
+            0.03,
+            0.055,
+            0.1,
+            0.19,
+            0.35,
+            0.62,
+            1.0,
+            1.4,
+            1.7,
+            1.85,
+            1.95,
+            1.98
+        ],
+        "strain_name": "E. coli BL21(DE3)",
+        "output_dir": "/tmp/biomni_test/growth_rate"
+    },
+    "analyze_barcode_sequencing_data": {
+        "input_file": "/tmp/biomni_test/barcode_reads.fastq",
+        "flanking_seq_5prime": "CACCG",
+        "flanking_seq_3prime": "GTTTA",
+        "min_count": 3,
+        "output_dir": "/tmp/biomni_test/barcode_results"
+    },
+    "analyze_bifurcation_diagram": {
+        "time_series_data": [
+            [
+                0.5,
+                0.5,
+                0.5,
+                0.5
+            ],
+            [
+                0.3,
+                0.7,
+                0.3,
+                0.7
+            ],
+            [
+                0.2,
+                0.5,
+                0.8,
+                0.5
+            ],
+            [
+                0.15,
+                0.52,
+                0.87,
+                0.45
+            ],
+            [
+                0.12,
+                0.42,
+                0.97,
+                0.11
+            ]
+        ],
+        "parameter_values": [
+            2.5,
+            3.0,
+            3.3,
+            3.5,
+            3.8
+        ],
+        "system_name": "Logistic Map",
+        "output_dir": "/tmp/biomni_test/bifurcation"
+    },
+    "create_biochemical_network_sbml_model": {
+        "reaction_network": [
+            {
+                "id": "R1",
+                "name": "Glucose phosphorylation",
+                "reactants": [
+                    {
+                        "species": "Glucose",
+                        "stoichiometry": 1
+                    },
+                    {
+                        "species": "ATP",
+                        "stoichiometry": 1
+                    }
+                ],
+                "products": [
+                    {
+                        "species": "G6P",
+                        "stoichiometry": 1
+                    },
+                    {
+                        "species": "ADP",
+                        "stoichiometry": 1
+                    }
+                ],
+                "reversible": false
+            },
+            {
+                "id": "R2",
+                "name": "G6P isomerization",
+                "reactants": [
+                    {
+                        "species": "G6P",
+                        "stoichiometry": 1
+                    }
+                ],
+                "products": [
+                    {
+                        "species": "F6P",
+                        "stoichiometry": 1
+                    }
+                ],
+                "reversible": true
+            }
+        ],
+        "kinetic_parameters": {
+            "R1": {
+                "law_type": "mass_action",
+                "parameters": {
+                    "k_forward": 0.1
+                }
+            },
+            "R2": {
+                "law_type": "mass_action",
+                "parameters": {
+                    "k_forward": 0.05,
+                    "k_reverse": 0.02
+                }
+            }
+        },
+        "output_file": "/tmp/biomni_test/glycolysis_model.xml"
+    },
+    "optimize_codons_for_heterologous_expression": {
+        "target_sequence": "ATGAAAGCAATTTTCGTACTGAAAATTTCGGATGCATTTAATCTGTCCGATAACAACACCCTGAATGATTTACTGATTAAGCAACTGTATGAAGCAATTCATGCAATTTCGGAAGCATTAAAAGCAGCACCG",
+        "host_codon_usage": {
+            "ATG": 1.0,
+            "AAA": 0.7,
+            "AAG": 0.3,
+            "GCA": 0.2,
+            "GCC": 0.3,
+            "GCG": 0.35,
+            "GCT": 0.15,
+            "TTT": 0.6,
+            "TTC": 0.4,
+            "GTT": 0.3,
+            "GTC": 0.2,
+            "GTA": 0.15,
+            "GTG": 0.35,
+            "CTG": 0.5,
+            "CTA": 0.04,
+            "CTT": 0.1,
+            "CTC": 0.1,
+            "TTA": 0.14,
+            "TTG": 0.12,
+            "GAA": 0.7,
+            "GAG": 0.3,
+            "GAT": 0.6,
+            "GAC": 0.4,
+            "TAT": 0.6,
+            "TAC": 0.4,
+            "CAA": 0.3,
+            "CAG": 0.7,
+            "CAT": 0.6,
+            "CAC": 0.4,
+            "TCT": 0.15,
+            "TCC": 0.15,
+            "TCA": 0.1,
+            "TCG": 0.15,
+            "AGT": 0.15,
+            "AGC": 0.3,
+            "CCG": 0.5,
+            "CCA": 0.2,
+            "CCT": 0.15,
+            "CCC": 0.15,
+            "ACG": 0.3,
+            "ACA": 0.13,
+            "ACT": 0.17,
+            "ACC": 0.4,
+            "CGT": 0.35,
+            "CGC": 0.4,
+            "CGA": 0.06,
+            "CGG": 0.1,
+            "AGA": 0.04,
+            "AGG": 0.05,
+            "GGT": 0.35,
+            "GGC": 0.4,
+            "GGA": 0.1,
+            "GGG": 0.15,
+            "TGG": 1.0,
+            "TGT": 0.4,
+            "TGC": 0.6,
+            "AAT": 0.5,
+            "AAC": 0.5,
+            "ATT": 0.5,
+            "ATC": 0.4,
+            "ATA": 0.1
+        }
+    },
+    "simulate_gene_circuit_with_growth_feedback": {
+        "circuit_topology": [
+            [
+                0,
+                -1
+            ],
+            [
+                1,
+                0
+            ]
+        ],
+        "kinetic_params": {
+            "basal_rates": [
+                0.1,
+                0.1
+            ],
+            "degradation_rates": [
+                0.05,
+                0.05
+            ],
+            "hill_coefficients": [
+                2.0,
+                2.0
+            ],
+            "threshold_constants": [
+                0.5,
+                0.5
+            ]
+        },
+        "growth_params": {
+            "max_growth_rate": 0.7,
+            "growth_inhibition": 0.1,
+            "gene_growth_weights": [
+                0.5,
+                0.5
+            ]
+        },
+        "simulation_time": 50,
+        "time_points": 500
+    },
+    "identify_fas_functional_domains": {
+        "sequence": "MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR",
+        "sequence_type": "protein"
+    },
+    "perform_flux_balance_analysis": {
+        "model_file": "/tmp/biomni_test/ecoli_model.xml"
+    },
+    "model_protein_dimerization_network": {
+        "monomer_concentrations": {
+            "A": 10.0,
+            "B": 5.0,
+            "C": 8.0
+        },
+        "dimerization_affinities": {
+            "A-B": 1000000.0,
+            "A-C": 500000.0,
+            "B-C": 2000000.0
+        },
+        "network_topology": [
+            [
+                "A",
+                "B"
+            ],
+            [
+                "A",
+                "C"
+            ],
+            [
+                "B",
+                "C"
+            ]
+        ]
+    },
+    "simulate_metabolic_network_perturbation": {
+        "model_file": "/tmp/biomni_test/metabolism_model.xml",
+        "initial_concentrations": {
+            "glucose": 10.0,
+            "pyruvate": 0.1,
+            "atp": 2.0
+        },
+        "perturbation_params": {
+            "time": 50.0,
+            "metabolite": "glucose",
+            "factor": 0.5
+        }
+    },
+    "simulate_protein_signaling_network": {
+        "network_structure": {
+            "AKT": [
+                [
+                    "PI3K",
+                    1
+                ],
+                [
+                    "PTEN",
+                    -1
+                ]
+            ],
+            "ERK": [
+                [
+                    "RAS",
+                    1
+                ],
+                [
+                    "AKT",
+                    -1
+                ]
+            ],
+            "mTOR": [
+                [
+                    "AKT",
+                    1
+                ]
+            ]
+        },
+        "reaction_params": {
+            "PI3K_AKT": {
+                "W": 1.0,
+                "n": 2,
+                "EC50": 0.5
+            },
+            "PTEN_AKT": {
+                "W": 0.8,
+                "n": 2,
+                "EC50": 0.3
+            },
+            "RAS_ERK": {
+                "W": 1.0,
+                "n": 2,
+                "EC50": 0.4
+            },
+            "AKT_ERK": {
+                "W": 0.6,
+                "n": 2,
+                "EC50": 0.5
+            },
+            "AKT_mTOR": {
+                "W": 1.0,
+                "n": 2,
+                "EC50": 0.5
+            }
+        },
+        "species_params": {
+            "AKT": {
+                "tau": 5.0,
+                "y0": 0.1,
+                "ymax": 1.0
+            },
+            "ERK": {
+                "tau": 3.0,
+                "y0": 0.2,
+                "ymax": 1.0
+            },
+            "mTOR": {
+                "tau": 8.0,
+                "y0": 0.05,
+                "ymax": 1.0
+            },
+            "PI3K": {
+                "tau": 1.0,
+                "y0": 0.8,
+                "ymax": 1.0
+            },
+            "PTEN": {
+                "tau": 1.0,
+                "y0": 0.3,
+                "ymax": 1.0
+            },
+            "RAS": {
+                "tau": 1.0,
+                "y0": 0.6,
+                "ymax": 1.0
+            }
+        },
+        "simulation_time": 50,
+        "time_points": 500
+    },
+    "compare_protein_structures": {
+        "pdb_file1": "/tmp/biomni_test/protein1.pdb",
+        "pdb_file2": "/tmp/biomni_test/protein2.pdb",
+        "chain_id1": "A",
+        "chain_id2": "A"
+    },
+    "simulate_renin_angiotensin_system_dynamics": {
+        "initial_concentrations": {
+            "renin": 1.0,
+            "angiotensinogen": 100.0,
+            "angiotensin_I": 0.0,
+            "angiotensin_II": 0.0,
+            "ACE2_angiotensin_II": 0.0,
+            "angiotensin_1_7": 0.0
+        },
+        "rate_constants": {
+            "k_ren": 0.5,
+            "k_agt": 0.1,
+            "k_ace": 2.0,
+            "k_ace2": 0.8,
+            "k_at1r": 0.3,
+            "k_mas": 0.2
+        },
+        "feedback_params": {
+            "fb_ang_II": 0.5,
+            "fb_ace2": 0.3
+        },
+        "simulation_time": 48,
+        "time_points": 200
+    },
+    "query_chatnt": {
+        "question": "What is the function of this DNA sequence?",
+        "sequence": "ATGCCCAAGCTGAATAGCGTAGAGGGGAAAGAATGATCAGGATTTGGCCCCTTTCAAT",
+        "device": -1
+    },
+    "run_python_repl": {
+        "command": "import sys; print(f'Python {sys.version}')"
+    },
+    "read_function_source_code": {
+        "function_name": "biomni.tool.literature.query_arxiv"
+    },
+    "download_synapse_data": {
+        "entity_ids": "syn12345678",
+        "entity_type": "file"
+    },
+    "query_uniprot": {
+        "prompt": "Find human TP53 tumor suppressor protein",
+        "max_results": 3
+    },
+    "query_alphafold": {
+        "uniprot_id": "P04637",
+        "endpoint": "prediction"
+    },
+    "query_interpro": {
+        "prompt": "Find protein domains in human insulin receptor",
+        "max_results": 5
+    },
+    "query_pdb": {
+        "prompt": "Find crystal structures of human hemoglobin",
+        "max_results": 3
+    },
+    "query_pdb_identifiers": {
+        "identifiers": [
+            "1HHO",
+            "4HHB"
+        ],
+        "return_type": "entry"
+    },
+    "query_kegg": {
+        "prompt": "Find the glycolysis pathway in humans"
+    },
+    "query_stringdb": {
+        "prompt": "Find protein interactions for TP53 in human"
+    },
+    "query_iucn": {
+        "token": "test_token",
+        "prompt": "Conservation status of Panthera tigris"
+    },
+    "query_paleobiology": {
+        "prompt": "Find Tyrannosaurus rex fossil records"
+    },
+    "query_jaspar": {
+        "prompt": "Find binding profile for GATA1 transcription factor"
+    },
+    "query_worms": {
+        "prompt": "Find taxonomic information for Crassostrea gigas"
+    },
+    "query_cbioportal": {
+        "prompt": "Find TP53 mutations in breast cancer studies"
+    },
+    "query_clinvar": {
+        "prompt": "Find pathogenic variants in BRCA1 gene"
+    },
+    "query_geo": {
+        "prompt": "Find RNA-seq datasets for pancreatic cancer"
+    },
+    "query_dbsnp": {
+        "prompt": "Find SNP rs7412 information"
+    },
+    "query_ucsc": {
+        "prompt": "Get gene information for TP53 in hg38"
+    },
+    "query_ensembl": {
+        "prompt": "Find gene ENSG00000141510 information"
+    },
+    "query_opentarget": {
+        "prompt": "Find drug targets associated with Alzheimer disease"
+    },
+    "query_monarch": {
+        "prompt": "Find phenotypes associated with BRCA1 gene"
+    },
+    "query_openfda": {
+        "prompt": "Find adverse events for metformin"
+    },
+    "query_gwas_catalog": {
+        "prompt": "Find GWAS studies for type 2 diabetes"
+    },
+    "query_gnomad": {
+        "prompt": "Find loss-of-function variants in BRCA1",
+        "gene_symbol": "BRCA1"
+    },
+    "blast_sequence": {
+        "sequence": "MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSH",
+        "database": "nr",
+        "program": "blastp"
+    },
+    "query_reactome": {
+        "prompt": "Find apoptosis signaling pathway"
+    },
+    "query_regulomedb": {
+        "prompt": "Find regulatory score for rs7412"
+    },
+    "query_pride": {
+        "prompt": "Find proteomics datasets for HeLa cells"
+    },
+    "query_gtopdb": {
+        "prompt": "Find pharmacological information for acetylcholine receptor"
+    },
+    "query_remap": {
+        "prompt": "Find transcription factor binding for CTCF in HeLa"
+    },
+    "query_mpd": {
+        "prompt": "Find mouse phenotype data for C57BL/6J strain"
+    },
+    "query_emdb": {
+        "prompt": "Find cryo-EM structures of SARS-CoV-2 spike protein"
+    },
+    "query_synapse": {
+        "prompt": "Find Alzheimer's disease genomics datasets"
+    },
+    "query_pubchem": {
+        "prompt": "Find compound information for aspirin"
+    },
+    "query_chembl": {
+        "prompt": "Find bioactivity data for imatinib",
+        "molecule_name": "imatinib"
+    },
+    "query_unichem": {
+        "prompt": "Find cross-references for aspirin across databases"
+    },
+    "query_clinicaltrials": {
+        "prompt": "Find active clinical trials for pembrolizumab in melanoma",
+        "max_results": 3
+    },
+    "query_dailymed": {
+        "prompt": "Find drug label for lisinopril"
+    },
+    "query_quickgo": {
+        "prompt": "Find GO annotations for human TP53",
+        "max_results": 10
+    },
+    "query_encode": {
+        "prompt": "Find ATAC-seq experiments in human liver"
+    },
+    "region_to_ccre_screen": {
+        "coord_chrom": "chr12",
+        "coord_start": 57500000,
+        "coord_end": 57600000,
+        "assembly": "GRCh38"
+    },
+    "get_genes_near_ccre": {
+        "accession": "EH38E1516980",
+        "assembly": "GRCh38",
+        "chromosome": "chr12",
+        "k": 5
+    },
+    "test_pylabrobot_script": {
+        "script_input": "from pylabrobot.liquid_handling import LiquidHandler\nfrom pylabrobot.liquid_handling.backends.simulation.simulator_backend import SimulatorBackend\nfrom pylabrobot.resources.hamilton import STARLetDeck\n\nasync def main():\n    backend = SimulatorBackend(open_browser=False)\n    lh = LiquidHandler(backend=backend, deck=STARLetDeck())\n    await lh.setup()\n    print('LiquidHandler initialized successfully')\n    await lh.stop()\n\nimport asyncio\nasyncio.run(main())",
+        "timeout_seconds": 30
+    },
+    "get_pylabrobot_documentation_liquid": {},
+    "get_pylabrobot_documentation_material": {},
+    "search_protocols": {
+        "query": "Western blot protein detection"
+    },
+    "get_protocol_details": {
+        "protocol_id": 1234
+    },
+    "list_local_protocols": {},
+    "read_local_protocol": {
+        "filename": "Addgene_ Protocol - How to Run an Agarose Gel.txt"
+    }
+}
