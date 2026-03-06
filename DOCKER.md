@@ -179,8 +179,8 @@ After merging, all CI fast builds layer on the new base.
 | Artifact | Location | Purpose |
 |----------|----------|---------|
 | Base Docker image | ECR `agent-environment:biomni-X.Y.Z` | Used by fast builds (`FROM` in Dockerfile) |
-| Conda env tarball | `s3://biomni-release/docker-build/<tag>/biomni_e1.tar.gz` | Backup; can rebuild base image from any machine |
-| CLI tools tarball | `s3://biomni-release/docker-build/<tag>/biomni_tools.tar.gz` | Backup; bundled into base image |
+| Conda env tarball | `s3://scale-biomni-artifacts/docker-build/<tag>/biomni_e1.tar.gz` | Backup; can rebuild base image from any machine |
+| CLI tools tarball | `s3://scale-biomni-artifacts/docker-build/<tag>/biomni_tools.tar.gz` | Backup; bundled into base image |
 
 The S3 tarballs mean you can rebuild the base image from scratch on any machine without re-running the 6-10 hour conda build:
 

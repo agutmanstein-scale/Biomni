@@ -30,7 +30,7 @@ FROM ubuntu:22.04
 ARG BAKE_DATA=false
 ARG TARBALL_TAG=biomni-1.0.6
 ARG TARBALL_SOURCE=s3
-ARG S3_BASE_URL=https://biomni-release.s3.amazonaws.com/docker-build
+ARG S3_BASE_URL=https://scale-biomni-artifacts.s3.amazonaws.com/docker-build
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PATH=/opt/conda/envs/biomni_e1/bin:/opt/biomni_tools/bin:$PATH \

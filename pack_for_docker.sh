@@ -9,8 +9,8 @@
 #   biomni_tools.tar.gz  — CLI bioinformatics tools (PLINK2, IQ-TREE, etc.)
 #
 # Uploads to (unless --no-upload):
-#   s3://biomni-release/docker-build/<TAG>/biomni_e1.tar.gz
-#   s3://biomni-release/docker-build/<TAG>/biomni_tools.tar.gz
+#   s3://scale-biomni-artifacts/docker-build/<TAG>/biomni_e1.tar.gz
+#   s3://scale-biomni-artifacts/docker-build/<TAG>/biomni_tools.tar.gz
 
 set -euo pipefail
 
@@ -18,7 +18,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ENV_NAME="biomni_e1"
 TOOLS_SRC="$SCRIPT_DIR/biomni_env/biomni_tools"
 OUT_DIR="$SCRIPT_DIR"
-S3_BUCKET="s3://biomni-release/docker-build"
+S3_BUCKET="s3://scale-biomni-artifacts/docker-build"
 NO_UPLOAD=false
 
 for arg in "$@"; do
