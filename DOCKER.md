@@ -107,6 +107,7 @@ The server exposes MCP-compatible endpoints at `http://localhost:1984`:
 | `GET` | `/tools` | Browse tools (optional `?module=` filter) |
 | `GET` | `/tools/{name}` | Single tool schema |
 | `GET` | `/modules` | List modules with tool counts |
+| `POST` | `/chat` | Chat with the ReAct agent: `{"messages": [{"role": "user", "content": "..."}]}` |
 
 ## Running Tests
 

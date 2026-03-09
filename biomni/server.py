@@ -72,37 +72,162 @@ _TYPE_MAP = {
 }
 
 
-def _resolve_json_schema_type(type_str: str) -> str:
-    """Map a Python type annotation string to a JSON Schema type.
+def _resolve_json_schema_type(type_str: str) -> dict:
+    """Map a Python type annotation string to a JSON Schema type fragment.
 
-    Handles compound types like ``List[int]``, ``Dict[str, Any]``,
-    ``Union[str, List[str]]``, and ``Optional[X]``.
+    Handles compound types like List[int], Dict[str, Any], Optional[str],
+    Union[str, List[str]], Tuple[int, int], and pipe unions (str|list[str]).
     """
-    low = type_str.strip().lower()
+    if not type_str:
+        return {"type": "string"}
+
+    t = type_str.strip()
+    low = t.lower()
+
     if low in _TYPE_MAP:
-        return _TYPE_MAP[low]
-    if low.startswith("list[") or low.startswith("list "):
-        return "array"
-    if low.startswith("dict[") or low.startswith("dict "):
-        return "object"
-    if low.startswith("optional["):
-        inner = type_str.strip()[len("optional["):-1]
+        return {"type": _TYPE_MAP[low]}
+
+    # "X or Y" patterns (e.g. "List[float] or numpy.ndarray") — take first
+    if " or " in low:
+        return _resolve_json_schema_type(t.split(" or ")[0].strip())
+
+    # Pipe unions: "str|list[str]" → pick the most structured alternative
+    if "|" in t and "[" not in t.split("|")[0]:
+        parts = [p.strip() for p in t.split("|")]
+        for p in parts:
+            if p.lower().startswith(("list", "dict")):
+                return _resolve_json_schema_type(p)
+        return _resolve_json_schema_type(parts[0])
+
+    # Optional[X] → resolve X (nullable at the JSON level)
+    if low.startswith("optional[") and t.endswith("]"):
+        inner = t[len("Optional["):-1]
         return _resolve_json_schema_type(inner)
-    if low.startswith("union["):
-        # Pick the first non-None type
-        inner = type_str.strip()[len("union["):-1]
-        for part in inner.split(","):
-            part = part.strip()
-            if part.lower() not in ("none", "nonetype"):
-                return _resolve_json_schema_type(part)
-    return "string"
+
+    # Union[X, Y, ...] → pick the first non-None type
+    if low.startswith("union[") and t.endswith("]"):
+        inner = t[len("Union["):-1]
+        parts = _split_type_args(inner)
+        for p in parts:
+            if p.strip().lower() not in ("none", "nonetype"):
+                return _resolve_json_schema_type(p.strip())
+        return {"type": "string"}
+
+    # List[X] / list[X] → array with items
+    if low.startswith(("list[", "list[")) and t.endswith("]"):
+        inner = t[t.index("[") + 1:-1]
+        return {"type": "array", "items": _resolve_json_schema_type(inner)}
+
+    # Dict[K, V] / dict[K, V] → object
+    if low.startswith(("dict[",)) and t.endswith("]"):
+        return {"type": "object"}
+
+    # Tuple[X, Y] → array (fixed-length)
+    if low.startswith("tuple[") and t.endswith("]"):
+        inner = t[len("Tuple["):-1]
+        parts = _split_type_args(inner)
+        return {
+            "type": "array",
+            "items": _resolve_json_schema_type(parts[0].strip()) if parts else {"type": "string"},
+        }
+
+    return {"type": _TYPE_MAP.get(low, "string")}
+
+
+def _split_type_args(s: str) -> list[str]:
+    """Split comma-separated type arguments respecting bracket nesting."""
+    parts: list[str] = []
+    depth = 0
+    current: list[str] = []
+    for ch in s:
+        if ch in "([":
+            depth += 1
+        elif ch in ")]":
+            depth -= 1
+        if ch == "," and depth == 0:
+            parts.append("".join(current))
+            current = []
+        else:
+            current.append(ch)
+    if current:
+        parts.append("".join(current))
+    return parts
 
 
 def _param_to_json_schema_prop(param: dict) -> dict:
-    prop: dict = {"type": _resolve_json_schema_type(param.get("type", "string"))}
+    prop = _resolve_json_schema_type(param.get("type", "string"))
     if "description" in param:
         prop["description"] = param["description"]
     return prop
+
+
+def _coerce_arg(value: Any, declared_type: str) -> Any:
+    """Best-effort coercion when a client sends a string where a richer type
+    is expected (common when the schema previously emitted ``"string"`` for
+    compound types).
+    """
+    if not isinstance(value, str) or not declared_type:
+        return value
+
+    low = declared_type.lower().strip()
+
+    is_array = low.startswith(("list[", "list", "tuple[", "tuple"))
+    is_object = low.startswith(("dict[", "dict"))
+    is_int = low in ("int", "integer")
+    is_float = low in ("float", "number")
+    is_bool = low in ("bool", "boolean")
+
+    # Pipe unions / "or" — check if any branch is structured
+    if "|" in low or " or " in low:
+        parts = low.replace(" or ", "|").split("|")
+        for p in parts:
+            p = p.strip()
+            if p.startswith(("list", "dict", "tuple")):
+                is_array = p.startswith(("list", "tuple"))
+                is_object = p.startswith("dict")
+                break
+
+    if low.startswith("optional["):
+        inner = declared_type.strip()[len("Optional["):-1]
+        return _coerce_arg(value, inner)
+
+    if low.startswith("union["):
+        inner = declared_type.strip()[len("Union["):-1]
+        parts = _split_type_args(inner)
+        for p in parts:
+            p = p.strip()
+            if p.lower() not in ("none", "nonetype", "str", "string"):
+                return _coerce_arg(value, p)
+        return value
+
+    if is_array or is_object:
+        stripped = value.strip()
+        if stripped and stripped[0] in "[{":
+            try:
+                return json.loads(stripped)
+            except (json.JSONDecodeError, ValueError):
+                pass
+        return value
+
+    if is_int:
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            return value
+
+    if is_float:
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return value
+
+    if is_bool:
+        if value.lower() in ("true", "1", "yes"):
+            return True
+        if value.lower() in ("false", "0", "no"):
+            return False
+
+    return value
 
 
 def _schema_to_mcp_tool(name: str, schema: dict) -> dict:
@@ -134,85 +259,32 @@ def _to_content_blocks(result: Any) -> list:
     return [{"type": "text", "text": text}]
 
 
-def _coerce_arg(value: Any, type_str: str) -> Any:
-    """Best-effort coercion of *value* to match the declared *type_str*.
-
-    Handles the common case where a JSON client sends a string for a
-    parameter declared as ``List[…]`` or ``dict`` — we attempt to
-    ``json.loads`` the string.  Also coerces numeric strings to int/float.
-    """
-    if value is None:
-        return value
-    low = type_str.strip().lower()
-
-    # List / array types — parse JSON strings
-    if low.startswith("list") or low == "array":
-        if isinstance(value, str):
-            try:
-                parsed = json.loads(value)
-                if isinstance(parsed, list):
-                    return parsed
-            except (json.JSONDecodeError, ValueError):
-                pass
-        return value
-
-    # Dict / object types
-    if low.startswith("dict") or low == "object":
-        if isinstance(value, str):
-            try:
-                parsed = json.loads(value)
-                if isinstance(parsed, dict):
-                    return parsed
-            except (json.JSONDecodeError, ValueError):
-                pass
-        return value
-
-    # Scalar coercion
-    if low in ("int", "integer") and isinstance(value, str):
-        try:
-            return int(value)
-        except ValueError:
-            pass
-    if low in ("float", "number") and isinstance(value, str):
-        try:
-            return float(value)
-        except ValueError:
-            pass
-    if low in ("bool", "boolean") and isinstance(value, str):
-        return value.lower() in ("true", "1", "yes")
-
-    # Union / Optional — try inner types
-    if low.startswith("union[") or low.startswith("optional["):
-        prefix_len = len("union[") if low.startswith("union[") else len("optional[")
-        inner = type_str.strip()[prefix_len:-1]
-        for part in inner.split(","):
-            part = part.strip()
-            if part.lower() not in ("none", "nonetype"):
-                coerced = _coerce_arg(value, part)
-                if coerced is not value:
-                    return coerced
-
-    return value
-
-
 def _inject_defaults(tool_name: str, tool_args: dict) -> dict:
-    """Auto-inject ``data_lake_path`` and coerce parameter types."""
+    """Auto-inject ``data_lake_path`` for tools that declare the parameter."""
     schema = _tool_index.get(tool_name, {})
     all_params = schema.get("required_parameters", []) + schema.get("optional_parameters", [])
-    param_map = {p["name"]: p for p in all_params if "name" in p}
+    param_names = {p["name"] for p in all_params if "name" in p}
 
-    if "data_lake_path" in param_map and "data_lake_path" not in tool_args:
+    if "data_lake_path" in param_names and "data_lake_path" not in tool_args:
         tool_args = {**tool_args, "data_lake_path": _DATA_LAKE_PATH}
 
-    # Coerce types based on schema declarations
-    for arg_name, arg_value in list(tool_args.items()):
-        param = param_map.get(arg_name)
-        if param and "type" in param:
-            coerced = _coerce_arg(arg_value, param["type"])
-            if coerced is not arg_value:
-                tool_args[arg_name] = coerced
-
     return tool_args
+
+
+def _coerce_tool_args(tool_name: str, tool_args: dict) -> dict:
+    """Coerce string arguments to their declared types when possible."""
+    schema = _tool_index.get(tool_name, {})
+    all_params = schema.get("required_parameters", []) + schema.get("optional_parameters", [])
+    type_map = {p["name"]: p.get("type", "string") for p in all_params if "name" in p}
+
+    coerced = {}
+    for key, value in tool_args.items():
+        declared = type_map.get(key)
+        if declared:
+            coerced[key] = _coerce_arg(value, declared)
+        else:
+            coerced[key] = value
+    return coerced
 
 
 # ---------------------------------------------------------------------------
@@ -383,6 +455,7 @@ async def call_tool(request: CallToolRequest) -> list:
         )
 
     tool_args = _inject_defaults(tool_name, tool_args)
+    tool_args = _coerce_tool_args(tool_name, tool_args)
 
     schema = _tool_index[tool_name]
     missing = [
@@ -508,6 +581,7 @@ async def env_step(request: EnvStepRequest) -> dict:
         )
 
     tool_args = _inject_defaults(tool_name, tool_args)
+    tool_args = _coerce_tool_args(tool_name, tool_args)
 
     schema = _tool_index[tool_name]
     missing = [
@@ -596,3 +670,262 @@ if __name__ == "__main__":
     host = os.environ.get("BIOMNI_HOST", "0.0.0.0")
     port = int(os.environ.get("BIOMNI_PORT", "1984"))
     uvicorn.run("biomni.server:app", host=host, port=port, log_level="info")
+
+
+# ---------------------------------------------------------------------------
+# Chat endpoint  (wraps the ReAct agent for conversational use)
+# ---------------------------------------------------------------------------
+
+class ChatRequest(BaseModel):
+    messages: list[Dict[str, str]]
+    config: Optional[Dict[str, Any]] = Field(default_factory=dict)
+
+
+class ChatToolCall(BaseModel):
+    name: str
+    args: Dict[str, Any] = Field(default_factory=dict)
+    result: Optional[str] = None
+    error: Optional[str] = None
+
+
+class TrajectoryStep(BaseModel):
+    """A single step in the agent's reasoning trajectory."""
+    step: int
+    type: str  # "reasoning", "tool_call", "tool_result"
+    content: Optional[str] = None
+    tool_name: Optional[str] = None
+    tool_args: Optional[Dict[str, Any]] = None
+    tool_call_id: Optional[str] = None
+
+
+class ChatResponse(BaseModel):
+    response: str
+    tool_calls: list[ChatToolCall] = Field(default_factory=list)
+    trajectory: list[TrajectoryStep] = Field(default_factory=list)
+    thinking: Optional[str] = None
+
+
+# Lazy-initialized agent singleton (heavy startup, reuse across requests)
+_chat_agent = None
+_chat_agent_lock = None
+
+
+def _get_chat_agent():
+    """Lazily initialize the ReAct agent for chat.
+
+    Uses the server's already-validated tool registry to avoid
+    AttributeError from tools whose functions are missing in
+    the installed biomni package (e.g. bioimaging helpers that
+    only exist in newer source but not in the base Docker image).
+    """
+    global _chat_agent, _chat_agent_lock
+    import threading
+    if _chat_agent_lock is None:
+        _chat_agent_lock = threading.Lock()
+
+    with _chat_agent_lock:
+        if _chat_agent is not None:
+            return _chat_agent
+
+        from biomni.agent.react import react as ReactAgent
+        from biomni.config import BiomniConfig, default_config
+        from biomni.llm import get_llm
+        from langchain_core.tools import StructuredTool
+
+        config = BiomniConfig()
+
+        # Build LangChain tools directly from the server's validated
+        # _tool_functions registry.  We skip api_schema_to_langchain_tool()
+        # because it re-imports the module and does getattr(module, name),
+        # which crashes on functions missing from the installed package.
+        safe_tools = []
+        for name, fn in _tool_functions.items():
+            schema = _tool_index.get(name)
+            if schema is None:
+                continue
+            try:
+                tool = StructuredTool.from_function(
+                    func=fn,
+                    name=name,
+                    description=schema.get("description", ""),
+                    return_direct=True,
+                )
+                safe_tools.append(tool)
+            except Exception as exc:
+                logger.warning("Skipping tool %s for chat agent: %s", name, exc)
+
+        logger.info("Chat agent initialized with %d tools (from %d registered)",
+                     len(safe_tools), len(_tool_functions))
+
+        agent = ReactAgent.__new__(ReactAgent)
+        # Manually initialize the fields that configure() needs
+        agent.path = config.path
+        agent.llm = get_llm(config.llm, config=default_config)
+        agent.timeout_seconds = config.timeout_seconds or 600
+        agent.tools = agent._add_timeout_to_tools(safe_tools)
+        agent.module2api = _module2api
+        agent.use_tool_retriever = False  # tools already filtered
+        from biomni.env_desc import data_lake_dict, library_content_dict
+        agent.data_lake_dict = data_lake_dict
+        agent.library_content_dict = library_content_dict
+        agent.prompt = ""
+        agent.system_prompt = ""
+
+        agent.configure(
+            plan=True,
+            reflect=True,
+            data_lake=True,
+            library_access=True,
+        )
+        _chat_agent = agent
+        return _chat_agent
+
+
+@app.post("/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest) -> ChatResponse:
+    """
+    Chat with the BiOMNI agent using natural language.
+
+    The agent will autonomously select and chain tools to answer
+    the user's question.
+
+    Request body:
+        messages: list of {role: "user"|"assistant", content: "..."}
+        config: optional overrides (e.g. {"llm": "claude-opus-4-6"})
+
+    Response:
+        response: the agent's final text answer
+        tool_calls: list of tools the agent called (name, args, result/error)
+        thinking: agent's reasoning trace (if available)
+    """
+    import asyncio
+
+    messages = request.messages
+    if not messages:
+        raise HTTPException(status_code=400, detail="messages list is empty")
+
+    # Extract the latest user message as the prompt
+    user_messages = [m for m in messages if m.get("role") == "user"]
+    if not user_messages:
+        raise HTTPException(status_code=400, detail="No user message found")
+
+    # Build context from conversation history
+    prompt_parts = []
+    if len(messages) > 1:
+        prompt_parts.append("Previous conversation:")
+        for msg in messages[:-1]:
+            role = msg.get("role", "user").capitalize()
+            content = msg.get("content", "")
+            prompt_parts.append(f"{role}: {content}")
+        prompt_parts.append("")
+        prompt_parts.append("Current question:")
+    prompt_parts.append(user_messages[-1].get("content", ""))
+    full_prompt = "\n".join(prompt_parts)
+
+    try:
+        agent = _get_chat_agent()
+
+        # Run the agent and collect raw LangGraph messages for trajectory
+        def run_agent_with_messages(prompt):
+            config = {"recursion_limit": 50}
+            inputs = {"messages": [("user", prompt)]}
+            all_messages = []
+            for s in agent.app.stream(inputs, stream_mode="values", config=config):
+                all_messages = s["messages"]
+            final_content = all_messages[-1].content if all_messages else ""
+            return all_messages, final_content
+
+        all_messages, final_content = await asyncio.to_thread(
+            run_agent_with_messages, full_prompt
+        )
+
+        # Build structured trajectory and tool_calls from raw messages
+        trajectory = []
+        tool_calls = []
+        step_num = 0
+
+        for msg in all_messages:
+            msg_type = getattr(msg, "type", "unknown")
+
+            if msg_type == "human":
+                # Skip the user input message
+                continue
+
+            elif msg_type == "ai":
+                # AI message — may contain reasoning text and/or tool calls
+                content = msg.content
+
+                # Extract text reasoning (may be string or list of content blocks)
+                reasoning_text = ""
+                if isinstance(content, str) and content.strip():
+                    reasoning_text = content
+                elif isinstance(content, list):
+                    text_parts = [
+                        block["text"] for block in content
+                        if isinstance(block, dict) and block.get("type") == "text"
+                    ]
+                    reasoning_text = "\n".join(text_parts)
+
+                if reasoning_text.strip():
+                    step_num += 1
+                    trajectory.append(TrajectoryStep(
+                        step=step_num,
+                        type="reasoning",
+                        content=reasoning_text,
+                    ))
+
+                # Extract tool calls
+                for tc in getattr(msg, "tool_calls", []):
+                    step_num += 1
+                    tool_name = tc.get("name", tc.get("function", {}).get("name", "unknown"))
+                    tool_args = tc.get("args", {})
+                    tool_id = tc.get("id", "")
+
+                    trajectory.append(TrajectoryStep(
+                        step=step_num,
+                        type="tool_call",
+                        tool_name=tool_name,
+                        tool_args=tool_args,
+                        tool_call_id=tool_id,
+                    ))
+
+                    tool_calls.append(ChatToolCall(
+                        name=tool_name,
+                        args=tool_args,
+                    ))
+
+            elif msg_type == "tool":
+                # Tool result message
+                step_num += 1
+                tool_name = getattr(msg, "name", "unknown")
+                result_content = msg.content
+                if isinstance(result_content, str) and len(result_content) > 4000:
+                    result_content = result_content[:4000] + "... [truncated]"
+
+                trajectory.append(TrajectoryStep(
+                    step=step_num,
+                    type="tool_result",
+                    tool_name=tool_name,
+                    content=result_content,
+                    tool_call_id=getattr(msg, "tool_call_id", None),
+                ))
+
+                # Match result back to the tool_call
+                for tc in reversed(tool_calls):
+                    if tc.name == tool_name and tc.result is None:
+                        tc.result = result_content[:2000] if result_content else ""
+                        break
+
+        return ChatResponse(
+            response=final_content,
+            tool_calls=tool_calls,
+            trajectory=trajectory,
+        )
+
+    except Exception as exc:
+        logger.error("Chat endpoint failed: %s", exc)
+        logger.debug(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Agent execution failed: {type(exc).__name__}: {exc}",
+        )

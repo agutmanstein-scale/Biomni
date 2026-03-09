@@ -18,6 +18,7 @@ def get_llm(
     base_url: str | None = None,
     api_key: str | None = None,
     config: Optional["BiomniConfig"] = None,
+    reasoning_effort: str | None = None,
 ) -> BaseChatModel:
     """
     Get a language model instance based on the specified model name and source.
@@ -31,11 +32,13 @@ def get_llm(
         base_url (str): The base URL for custom model serving (e.g., "http://localhost:8000/v1"), default is None
         api_key (str): The API key for the custom llm
         config (BiomniConfig): Optional configuration object. If provided, unspecified parameters will use config values
+        reasoning_effort (str): Reasoning effort level: "low", "medium", "high", or "max".
+                                Supported by LiteLLM proxy for Claude and by OpenAI for reasoning models.
     """
     # Use config values for any unspecified parameters
     if config is not None:
         if model is None:
-            model = config.llm_model
+            model = config.llm
         if temperature is None:
             temperature = config.temperature
         if source is None:
@@ -44,6 +47,8 @@ def get_llm(
             base_url = config.base_url
         if api_key is None:
             api_key = config.api_key or "EMPTY"
+        if reasoning_effort is None:
+            reasoning_effort = config.reasoning_effort
 
     # Use defaults if still not specified
     if model is None:
@@ -108,29 +113,28 @@ def get_llm(
         use_responses = model.startswith("gpt-5")
 
         if use_responses:
-            # Define a minimal subclass that drops the `stop` field when using the
-            # Responses API, since certain models (gpt-5-*) reject it entirely.
             class _ChatOpenAIResponsesNoStop(ChatOpenAI):
                 def _get_request_payload(self, input_, *, stop=None, **kwargs):  # type: ignore[override]
                     payload = super()._get_request_payload(input_, stop=stop, **kwargs)
                     try:
-                        # If this call will use the Responses API, drop `stop` to avoid 400s.
                         if hasattr(self, "_use_responses_api") and self._use_responses_api(payload):  # type: ignore[attr-defined]
                             payload.pop("stop", None)
-                            # Also drop temperature for gpt-5 models as they only support default value
                             payload.pop("temperature", None)
                     except Exception:
-                        # Be conservative: if anything goes wrong, still remove `stop` and `temperature`.
                         payload.pop("stop", None)
                         payload.pop("temperature", None)
                     return payload
 
+            oai_kwargs: dict = {}
+            if reasoning_effort:
+                oai_kwargs["reasoning_effort"] = reasoning_effort
             return _ChatOpenAIResponsesNoStop(
                 model=model,
-                temperature=1,  # Set to default value for gpt-5, will be removed in payload
+                temperature=1,
                 stop_sequences=stop_sequences,
                 use_responses_api=True,
                 output_version="v0",
+                model_kwargs=oai_kwargs or None,
             )
         else:
             return ChatOpenAI(
@@ -257,16 +261,24 @@ def get_llm(
             raise ImportError(  # noqa: B904
                 "langchain-openai package is required for custom models. Install with: pip install langchain-openai"
             )
-        # Custom LLM serving such as SGLang. Must expose an openai compatible API.
         assert base_url is not None, "base_url must be provided for customly served LLMs"
-        llm = ChatOpenAI(
+        extra_kwargs: dict = {}
+        max_tok = 8192
+        if reasoning_effort:
+            extra_kwargs["reasoning_effort"] = reasoning_effort
+            extra_kwargs["allowed_openai_params"] = ["reasoning_effort"]
+            max_tok = 16384
+        kwargs = dict(
             model=model,
             temperature=temperature,
-            max_tokens=8192,
+            max_tokens=max_tok,
             stop_sequences=stop_sequences,
             base_url=base_url,
             api_key=api_key,
         )
+        if extra_kwargs:
+            kwargs["model_kwargs"] = extra_kwargs
+        llm = ChatOpenAI(**kwargs)
         return llm
 
     else:

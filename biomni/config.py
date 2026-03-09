@@ -49,6 +49,10 @@ class BiomniConfig:
     # LLM source (auto-detected if None)
     source: str | None = None
 
+    # Reasoning effort for models that support it (e.g. Claude via LiteLLM).
+    # Valid values: "low", "medium", "high", "max" (max is Opus-only), or None to omit.
+    reasoning_effort: str | None = None
+
     # Third-party integrations
     protocols_io_access_token: str | None = None
 
@@ -74,6 +78,8 @@ class BiomniConfig:
             self.api_key = os.getenv("BIOMNI_CUSTOM_API_KEY")
         if os.getenv("BIOMNI_SOURCE"):
             self.source = os.getenv("BIOMNI_SOURCE")
+        if os.getenv("BIOMNI_REASONING_EFFORT"):
+            self.reasoning_effort = os.getenv("BIOMNI_REASONING_EFFORT")
 
         # Protocols.io access token (prefer specific env vars)
         env_token = os.getenv("PROTOCOLS_IO_ACCESS_TOKEN") or os.getenv("BIOMNI_PROTOCOLS_IO_ACCESS_TOKEN")
@@ -92,6 +98,7 @@ class BiomniConfig:
             "base_url": self.base_url,
             "api_key": self.api_key,
             "source": self.source,
+            "reasoning_effort": self.reasoning_effort,
         }
 
 
