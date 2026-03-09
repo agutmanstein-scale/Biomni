@@ -29,6 +29,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from biomni.utils import read_module2api
@@ -702,7 +703,6 @@ class ChatResponse(BaseModel):
     response: str
     tool_calls: list[ChatToolCall] = Field(default_factory=list)
     trajectory: list[TrajectoryStep] = Field(default_factory=list)
-    thinking: Optional[str] = None
 
 
 # Lazy-initialized agent singleton (heavy startup, reuse across requests)
@@ -929,3 +929,136 @@ async def chat(request: ChatRequest) -> ChatResponse:
             status_code=500,
             detail=f"Agent execution failed: {type(exc).__name__}: {exc}",
         )
+
+
+@app.post("/chat/stream")
+async def chat_stream(request: ChatRequest):
+    """
+    Streaming chat endpoint — returns NDJSON lines as the agent reasons.
+
+    Each line is a JSON object with a ``type`` discriminator:
+    - ``trajectory_step``: incremental reasoning/tool_call/tool_result
+    - ``final_response``: full response + trajectory when agent finishes
+    - ``error``: if something goes wrong mid-stream
+    """
+    import asyncio
+
+    messages = request.messages
+    if not messages:
+        raise HTTPException(status_code=400, detail="messages list is empty")
+
+    user_messages = [m for m in messages if m.get("role") == "user"]
+    if not user_messages:
+        raise HTTPException(status_code=400, detail="No user message found")
+
+    # Build context from conversation history (same as /chat)
+    prompt_parts = []
+    if len(messages) > 1:
+        prompt_parts.append("Previous conversation:")
+        for msg in messages[:-1]:
+            role = msg.get("role", "user").capitalize()
+            content = msg.get("content", "")
+            prompt_parts.append(f"{role}: {content}")
+        prompt_parts.append("")
+        prompt_parts.append("Current question:")
+    prompt_parts.append(user_messages[-1].get("content", ""))
+    full_prompt = "\n".join(prompt_parts)
+
+    def generate():
+        try:
+            agent = _get_chat_agent()
+            config = {"recursion_limit": 50}
+            inputs = {"messages": [("user", full_prompt)]}
+
+            step_counter = 0
+            all_steps = []
+            tool_calls_list = []
+            final_response = ""
+            processed_count = 0
+
+            for chunk in agent.app.stream(inputs, stream_mode="values", config=config):
+                chunk_messages = chunk.get("messages", [])
+                # Process only new messages since last chunk
+                new_messages = chunk_messages[processed_count:]
+                processed_count = len(chunk_messages)
+
+                for msg in new_messages:
+                    msg_type = getattr(msg, "type", "unknown")
+
+                    if msg_type == "human":
+                        continue
+
+                    elif msg_type == "ai":
+                        content = msg.content
+                        reasoning_text = ""
+                        if isinstance(content, str) and content.strip():
+                            reasoning_text = content
+                        elif isinstance(content, list):
+                            text_parts = [
+                                block["text"] for block in content
+                                if isinstance(block, dict) and block.get("type") == "text"
+                            ]
+                            reasoning_text = "\n".join(text_parts)
+
+                        if reasoning_text.strip():
+                            step_counter += 1
+                            step = {"step": step_counter, "type": "reasoning", "content": reasoning_text}
+                            all_steps.append(step)
+                            final_response = reasoning_text
+                            yield json.dumps({"type": "trajectory_step", "step": step}) + "\n"
+
+                        for tc in getattr(msg, "tool_calls", []):
+                            step_counter += 1
+                            tool_name = tc.get("name", tc.get("function", {}).get("name", "unknown"))
+                            tool_args = tc.get("args", {})
+                            tool_id = tc.get("id", "")
+                            step = {
+                                "step": step_counter,
+                                "type": "tool_call",
+                                "tool_name": tool_name,
+                                "tool_args": tool_args,
+                                "tool_call_id": tool_id,
+                            }
+                            all_steps.append(step)
+                            tool_calls_list.append({"name": tool_name, "args": tool_args})
+                            yield json.dumps({"type": "trajectory_step", "step": step}) + "\n"
+
+                    elif msg_type == "tool":
+                        step_counter += 1
+                        tool_name = getattr(msg, "name", "unknown")
+                        result_content = msg.content
+                        if isinstance(result_content, str) and len(result_content) > 4000:
+                            result_content = result_content[:4000] + "... [truncated]"
+                        step = {
+                            "step": step_counter,
+                            "type": "tool_result",
+                            "tool_name": tool_name,
+                            "content": result_content,
+                            "tool_call_id": getattr(msg, "tool_call_id", None),
+                        }
+                        all_steps.append(step)
+                        yield json.dumps({"type": "trajectory_step", "step": step}) + "\n"
+
+                        # Match result back to tool_call
+                        for tc in reversed(tool_calls_list):
+                            if tc["name"] == tool_name and "result" not in tc:
+                                tc["result"] = result_content[:2000] if result_content else ""
+                                break
+
+            # Emit final response with full trajectory
+            yield json.dumps({
+                "type": "final_response",
+                "response": final_response,
+                "trajectory": all_steps,
+                "tool_calls": tool_calls_list,
+            }) + "\n"
+
+        except Exception as exc:
+            logger.error("Chat stream failed: %s", exc)
+            logger.debug(traceback.format_exc())
+            yield json.dumps({
+                "type": "error",
+                "message": f"Agent execution failed: {type(exc).__name__}: {exc}",
+            }) + "\n"
+
+    return StreamingResponse(generate(), media_type="application/x-ndjson")
