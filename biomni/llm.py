@@ -263,10 +263,12 @@ def get_llm(
             )
         assert base_url is not None, "base_url must be provided for customly served LLMs"
         extra_kwargs: dict = {}
+        extra_body: dict = {}
         max_tok = 8192
         if reasoning_effort:
             extra_kwargs["reasoning_effort"] = reasoning_effort
-            extra_kwargs["allowed_openai_params"] = ["reasoning_effort"]
+            # LiteLLM needs allowed_openai_params in extra_body, not as a top-level kwarg
+            extra_body["allowed_openai_params"] = ["reasoning_effort"]
             max_tok = 16384
         kwargs = dict(
             model=model,
@@ -278,6 +280,8 @@ def get_llm(
         )
         if extra_kwargs:
             kwargs["model_kwargs"] = extra_kwargs
+        if extra_body:
+            kwargs["extra_body"] = extra_body
         llm = ChatOpenAI(**kwargs)
         return llm
 

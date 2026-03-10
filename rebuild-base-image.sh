@@ -48,9 +48,11 @@ usage() {
 Usage: bash rebuild-base-image.sh <command> [options]
 
 Commands:
+  setup-devbox         Install Docker, AWS CLI, and deps on a fresh DevBox
   start [--tag TAG]    Create DevBox and kick off conda env build
   status               Check build progress on the DevBox
   finish [--tag TAG]   Pack tarballs, upload to S3, build Docker image, push to ECR
+  fast [--tag TAG]     Fast build: copy source onto base image and push (no conda rebuild)
   help                 Show this help
 
 Options:
@@ -59,6 +61,111 @@ Options:
 The build takes 6-10 hours. Run 'start', go do other things, check 'status'
 periodically, and run 'finish' when the conda build is done.
 EOF
+}
+
+setup_devbox() {
+    local DEVBOX_HOST="${1:-devbox-biomni-build}"
+    echo "=== Setting up DevBox ($DEVBOX_HOST) for Docker builds ==="
+
+    if ! ssh -o ConnectTimeout=5 "$DEVBOX_HOST" true 2>/dev/null; then
+        echo "ERROR: Cannot reach $DEVBOX_HOST."
+        echo "  Create one first: sai devbox create --name biomni-build --size small --team gen_ai"
+        exit 1
+    fi
+
+    ssh "$DEVBOX_HOST" bash <<'SETUP_SCRIPT'
+set -euo pipefail
+echo "--- Installing system packages ---"
+sudo apt-get update -qq
+sudo apt-get install -y -qq docker.io unzip > /dev/null
+
+echo "--- Starting Docker ---"
+sudo systemctl start docker
+sudo usermod -aG docker $USER
+
+echo "--- Installing AWS CLI ---"
+if ! command -v aws &>/dev/null; then
+    curl -sS "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+    cd /tmp && unzip -q -o awscliv2.zip && sudo ./aws/install
+fi
+aws --version
+
+echo ""
+echo "=== DevBox ready ==="
+echo "NOTE: AWS SSO creds must be forwarded for ECR access."
+echo "  From your laptop, run:"
+echo "    aws configure export-credentials --profile production-developer --format env"
+echo "  Then export those vars in your SSH session, or use:"
+echo "    bash rebuild-base-image.sh fast --tag <TAG>"
+SETUP_SCRIPT
+}
+
+fast_build() {
+    echo "=== BiOMNI Fast Build ==="
+    echo "  Tag: $NEW_TAG"
+    echo "  Base: $CURRENT_TAG"
+    echo ""
+
+    # Check for a reachable devbox (try common names)
+    local DEVBOX_HOST=""
+    for host in osworld-evaluations devbox-biomni-build devbox; do
+        if ssh -o ConnectTimeout=5 "$host" true 2>/dev/null; then
+            DEVBOX_HOST="$host"
+            break
+        fi
+    done
+
+    if [ -z "$DEVBOX_HOST" ]; then
+        echo "ERROR: No DevBox reachable. Create one first:"
+        echo "  sai devbox create --name biomni-build --size small --team gen_ai"
+        echo "  bash rebuild-base-image.sh setup-devbox"
+        exit 1
+    fi
+    echo "Using DevBox: $DEVBOX_HOST"
+
+    # Sync source to devbox
+    echo "--- Syncing source ---"
+    rsync -az --exclude='.git' --exclude='__pycache__' --exclude='*.pyc' --exclude='data' \
+        "$SCRIPT_DIR/" "$DEVBOX_HOST:~/biomni/"
+
+    # Forward local AWS creds
+    local AWS_CREDS
+    AWS_CREDS=$(aws configure export-credentials --profile production-developer --format env 2>/dev/null || true)
+    if [ -z "$AWS_CREDS" ]; then
+        echo "ERROR: Could not export AWS credentials. Run 'aws sso login' first."
+        exit 1
+    fi
+
+    # Build and push on devbox
+    ssh "$DEVBOX_HOST" bash <<REMOTE_BUILD
+set -euo pipefail
+$AWS_CREDS
+export AWS_DEFAULT_REGION=us-west-2
+
+ECR_REGISTRY="$ECR_REGISTRY"
+
+echo "--- ECR login ---"
+aws ecr get-login-password --region us-west-2 | \\
+    sudo docker login --username AWS --password-stdin \$ECR_REGISTRY
+
+echo "--- Building ---"
+cd ~/biomni
+sudo docker build \\
+    --build-arg BASE_TAG=$CURRENT_TAG \\
+    -t \$ECR_REGISTRY/$ECR_REPO:$NEW_TAG \\
+    .
+
+echo "--- Pushing ---"
+sudo docker push \$ECR_REGISTRY/$ECR_REPO:$NEW_TAG
+
+echo ""
+echo "=== Done ==="
+echo "Image: \$ECR_REGISTRY/$ECR_REPO:$NEW_TAG"
+REMOTE_BUILD
+
+    echo ""
+    echo "=== Fast build complete ==="
+    echo "  Image: $ECR_REGISTRY/$ECR_REPO:$NEW_TAG"
 }
 
 start_build() {
@@ -257,8 +364,10 @@ REMOTE_SCRIPT
 }
 
 case "$COMMAND" in
+    setup-devbox) setup_devbox "${2:-}" ;;
     start) start_build ;;
     status) check_status ;;
     finish) finish_build ;;
+    fast) fast_build ;;
     help|*) usage ;;
 esac

@@ -49,6 +49,36 @@ Defined in `.circleci/generate_config.py`. Triggers on master merges touching `p
 
 Set in CircleCI project settings, not in code.
 
+## Manual Fast Build (no CI)
+
+For pushing source changes without waiting for CI (e.g. testing on Modal before merging):
+
+```bash
+cd packages/biomni
+
+# Build and push (auto-increments tag from BASE_IMAGE_TAG)
+aws sso login
+bash rebuild-base-image.sh fast --tag biomni-1.0.19
+```
+
+This builds on a remote x86_64 instance, avoiding slow `--platform linux/amd64` emulation on Apple Silicon. The script tries build hosts in this order:
+
+1. **`osworld-evaluations`** (preferred) — EC2 instance with Docker 25.0, AWS CLI 2.33, x86_64, ~78GB free
+2. **`devbox-biomni-build`** — Scale DevBox (fallback)
+3. **`devbox`** — Generic DevBox (last resort)
+
+If no host is reachable, create a DevBox:
+```bash
+sai devbox create --name biomni-build --size small --team gen_ai
+bash rebuild-base-image.sh setup-devbox
+```
+
+The script:
+- Syncs your local source to the build host via rsync
+- Forwards your AWS SSO credentials for ECR auth
+- Builds the fast Dockerfile (layers source on base image)
+- Pushes to ECR
+
 ## Running the Container
 
 ### Basic

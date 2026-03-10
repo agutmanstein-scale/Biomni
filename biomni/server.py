@@ -679,6 +679,7 @@ if __name__ == "__main__":
 
 class ChatRequest(BaseModel):
     messages: list[Dict[str, str]]
+    model: Optional[str] = None  # Override default LLM model
     config: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
 
@@ -692,11 +693,13 @@ class ChatToolCall(BaseModel):
 class TrajectoryStep(BaseModel):
     """A single step in the agent's reasoning trajectory."""
     step: int
-    type: str  # "reasoning", "tool_call", "tool_result"
+    type: str  # "reasoning", "tool_call", "tool_result", "thinking", "code", "observation", "solution"
     content: Optional[str] = None
     tool_name: Optional[str] = None
     tool_args: Optional[Dict[str, Any]] = None
     tool_call_id: Optional[str] = None
+    rationale: Optional[str] = None  # Why the agent chose this tool
+    language: Optional[str] = None  # For code steps: "python", "r", "bash"
 
 
 class ChatResponse(BaseModel):
@@ -705,66 +708,69 @@ class ChatResponse(BaseModel):
     trajectory: list[TrajectoryStep] = Field(default_factory=list)
 
 
-# Lazy-initialized agent singleton (heavy startup, reuse across requests)
-_chat_agent = None
-_chat_agent_lock = None
+# Model-keyed agent pools (heavy startup, reuse across requests)
+import threading
+
+_chat_agents: dict = {}  # {model_name: ReactAgent}
+_chat_agents_lock = threading.Lock()
+
+_a1_agents: dict = {}  # {model_name: A1Agent}
+_a1_agents_lock = threading.Lock()
 
 
-def _get_chat_agent():
-    """Lazily initialize the ReAct agent for chat.
+def _build_safe_tools():
+    """Build LangChain tools from the server's validated tool registry."""
+    from langchain_core.tools import StructuredTool
+
+    safe_tools = []
+    for name, fn in _tool_functions.items():
+        schema = _tool_index.get(name)
+        if schema is None:
+            continue
+        try:
+            tool = StructuredTool.from_function(
+                func=fn,
+                name=name,
+                description=schema.get("description", ""),
+                return_direct=True,
+            )
+            safe_tools.append(tool)
+        except Exception as exc:
+            logger.warning("Skipping tool %s for chat agent: %s", name, exc)
+    return safe_tools
+
+
+def _get_chat_agent(model: str | None = None):
+    """Lazily initialize the ReAct agent for chat, pooled by model.
 
     Uses the server's already-validated tool registry to avoid
     AttributeError from tools whose functions are missing in
-    the installed biomni package (e.g. bioimaging helpers that
-    only exist in newer source but not in the base Docker image).
+    the installed biomni package.
     """
-    global _chat_agent, _chat_agent_lock
-    import threading
-    if _chat_agent_lock is None:
-        _chat_agent_lock = threading.Lock()
+    from biomni.config import BiomniConfig, default_config
+    from biomni.llm import get_llm
 
-    with _chat_agent_lock:
-        if _chat_agent is not None:
-            return _chat_agent
+    model = model or default_config.llm
+
+    with _chat_agents_lock:
+        if model in _chat_agents:
+            return _chat_agents[model]
 
         from biomni.agent.react import react as ReactAgent
-        from biomni.config import BiomniConfig, default_config
-        from biomni.llm import get_llm
-        from langchain_core.tools import StructuredTool
 
         config = BiomniConfig()
+        safe_tools = _build_safe_tools()
 
-        # Build LangChain tools directly from the server's validated
-        # _tool_functions registry.  We skip api_schema_to_langchain_tool()
-        # because it re-imports the module and does getattr(module, name),
-        # which crashes on functions missing from the installed package.
-        safe_tools = []
-        for name, fn in _tool_functions.items():
-            schema = _tool_index.get(name)
-            if schema is None:
-                continue
-            try:
-                tool = StructuredTool.from_function(
-                    func=fn,
-                    name=name,
-                    description=schema.get("description", ""),
-                    return_direct=True,
-                )
-                safe_tools.append(tool)
-            except Exception as exc:
-                logger.warning("Skipping tool %s for chat agent: %s", name, exc)
-
-        logger.info("Chat agent initialized with %d tools (from %d registered)",
-                     len(safe_tools), len(_tool_functions))
+        logger.info("Chat agent initializing for model=%s with %d tools (from %d registered)",
+                     model, len(safe_tools), len(_tool_functions))
 
         agent = ReactAgent.__new__(ReactAgent)
-        # Manually initialize the fields that configure() needs
         agent.path = config.path
-        agent.llm = get_llm(config.llm, config=default_config)
+        agent.llm = get_llm(model, config=default_config)
         agent.timeout_seconds = config.timeout_seconds or 600
         agent.tools = agent._add_timeout_to_tools(safe_tools)
         agent.module2api = _module2api
-        agent.use_tool_retriever = False  # tools already filtered
+        agent.use_tool_retriever = False
         from biomni.env_desc import data_lake_dict, library_content_dict
         agent.data_lake_dict = data_lake_dict
         agent.library_content_dict = library_content_dict
@@ -777,8 +783,37 @@ def _get_chat_agent():
             data_lake=True,
             library_access=True,
         )
-        _chat_agent = agent
-        return _chat_agent
+        _chat_agents[model] = agent
+        return agent
+
+
+def _get_a1_agent(model: str | None = None):
+    """Lazily initialize the A1 code-gen agent for chat, pooled by model."""
+    from biomni.config import default_config
+    from biomni.llm import get_llm
+
+    model = model or default_config.llm
+
+    with _a1_agents_lock:
+        if model in _a1_agents:
+            return _a1_agents[model]
+
+        from biomni.agent.a1 import A1 as A1Agent
+
+        logger.info("A1 agent initializing for model=%s", model)
+
+        agent = A1(
+            llm=model,
+            source=default_config.source,
+            base_url=default_config.base_url,
+            api_key=default_config.api_key,
+            commercial_mode=default_config.commercial_mode,
+            timeout_seconds=default_config.timeout_seconds or 600,
+            expected_data_lake_files=[],  # Skip downloads in server mode
+        )
+
+        _a1_agents[model] = agent
+        return agent
 
 
 @app.post("/chat", response_model=ChatResponse)
@@ -823,7 +858,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
     full_prompt = "\n".join(prompt_parts)
 
     try:
-        agent = _get_chat_agent()
+        agent = _get_chat_agent(request.model)
 
         # Run the agent and collect raw LangGraph messages for trajectory
         def run_agent_with_messages(prompt):
@@ -843,6 +878,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
         trajectory = []
         tool_calls = []
         step_num = 0
+        last_reasoning = ""  # Carry reasoning across AI messages for rationale
 
         for msg in all_messages:
             msg_type = getattr(msg, "type", "unknown")
@@ -852,26 +888,53 @@ async def chat(request: ChatRequest) -> ChatResponse:
                 continue
 
             elif msg_type == "ai":
-                # AI message — may contain reasoning text and/or tool calls
+                # AI message — may contain reasoning text, thinking blocks, and/or tool calls
                 content = msg.content
 
-                # Extract text reasoning (may be string or list of content blocks)
+                # Extract text reasoning and thinking blocks
                 reasoning_text = ""
+                thinking_text = ""
                 if isinstance(content, str) and content.strip():
                     reasoning_text = content
                 elif isinstance(content, list):
-                    text_parts = [
-                        block["text"] for block in content
-                        if isinstance(block, dict) and block.get("type") == "text"
-                    ]
+                    text_parts = []
+                    thinking_parts = []
+                    for block in content:
+                        if not isinstance(block, dict):
+                            continue
+                        btype = block.get("type", "")
+                        if btype == "text":
+                            text_parts.append(block.get("text", ""))
+                        elif btype == "thinking":
+                            thinking_parts.append(block.get("thinking", ""))
                     reasoning_text = "\n".join(text_parts)
+                    thinking_text = "\n".join(thinking_parts)
+
+                # Also check for reasoning_content (LiteLLM OpenAI-compat format)
+                if not thinking_text:
+                    rc = getattr(msg, "reasoning_content", None)
+                    if not rc:
+                        rc = getattr(msg, "additional_kwargs", {}).get("reasoning_content", "")
+                    if rc:
+                        thinking_text = rc
 
                 if reasoning_text.strip():
+                    last_reasoning = reasoning_text
                     step_num += 1
                     trajectory.append(TrajectoryStep(
                         step=step_num,
                         type="reasoning",
                         content=reasoning_text,
+                    ))
+
+                # Thinking blocks get their own trajectory step + become rationale for tool calls
+                if thinking_text.strip():
+                    last_reasoning = thinking_text
+                    step_num += 1
+                    trajectory.append(TrajectoryStep(
+                        step=step_num,
+                        type="reasoning",
+                        content=thinking_text,
                     ))
 
                 # Extract tool calls
@@ -887,7 +950,9 @@ async def chat(request: ChatRequest) -> ChatResponse:
                         tool_name=tool_name,
                         tool_args=tool_args,
                         tool_call_id=tool_id,
+                        rationale=last_reasoning if last_reasoning.strip() else None,
                     ))
+                    last_reasoning = ""  # Consume after attaching
 
                     tool_calls.append(ChatToolCall(
                         name=tool_name,
@@ -964,9 +1029,11 @@ async def chat_stream(request: ChatRequest):
     prompt_parts.append(user_messages[-1].get("content", ""))
     full_prompt = "\n".join(prompt_parts)
 
+    req_model = request.model
+
     def generate():
         try:
-            agent = _get_chat_agent()
+            agent = _get_chat_agent(req_model)
             config = {"recursion_limit": 50}
             inputs = {"messages": [("user", full_prompt)]}
 
@@ -975,6 +1042,7 @@ async def chat_stream(request: ChatRequest):
             tool_calls_list = []
             final_response = ""
             processed_count = 0
+            last_reasoning = ""  # Carry reasoning across AI messages for rationale
 
             for chunk in agent.app.stream(inputs, stream_mode="values", config=config):
                 chunk_messages = chunk.get("messages", [])
@@ -991,20 +1059,44 @@ async def chat_stream(request: ChatRequest):
                     elif msg_type == "ai":
                         content = msg.content
                         reasoning_text = ""
+                        thinking_text = ""
                         if isinstance(content, str) and content.strip():
                             reasoning_text = content
                         elif isinstance(content, list):
-                            text_parts = [
-                                block["text"] for block in content
-                                if isinstance(block, dict) and block.get("type") == "text"
-                            ]
+                            text_parts = []
+                            thinking_parts = []
+                            for block in content:
+                                if not isinstance(block, dict):
+                                    continue
+                                btype = block.get("type", "")
+                                if btype == "text":
+                                    text_parts.append(block.get("text", ""))
+                                elif btype == "thinking":
+                                    thinking_parts.append(block.get("thinking", ""))
                             reasoning_text = "\n".join(text_parts)
+                            thinking_text = "\n".join(thinking_parts)
+
+                        # Also check for reasoning_content (LiteLLM OpenAI-compat format)
+                        if not thinking_text:
+                            rc = getattr(msg, "reasoning_content", None)
+                            if not rc:
+                                rc = getattr(msg, "additional_kwargs", {}).get("reasoning_content", "")
+                            if rc:
+                                thinking_text = rc
 
                         if reasoning_text.strip():
+                            last_reasoning = reasoning_text
                             step_counter += 1
                             step = {"step": step_counter, "type": "reasoning", "content": reasoning_text}
                             all_steps.append(step)
                             final_response = reasoning_text
+                            yield json.dumps({"type": "trajectory_step", "step": step}) + "\n"
+
+                        if thinking_text.strip():
+                            last_reasoning = thinking_text
+                            step_counter += 1
+                            step = {"step": step_counter, "type": "reasoning", "content": thinking_text}
+                            all_steps.append(step)
                             yield json.dumps({"type": "trajectory_step", "step": step}) + "\n"
 
                         for tc in getattr(msg, "tool_calls", []):
@@ -1018,7 +1110,9 @@ async def chat_stream(request: ChatRequest):
                                 "tool_name": tool_name,
                                 "tool_args": tool_args,
                                 "tool_call_id": tool_id,
+                                "rationale": last_reasoning if last_reasoning.strip() else None,
                             }
+                            last_reasoning = ""  # Consume after attaching
                             all_steps.append(step)
                             tool_calls_list.append({"name": tool_name, "args": tool_args})
                             yield json.dumps({"type": "trajectory_step", "step": step}) + "\n"
@@ -1059,6 +1153,308 @@ async def chat_stream(request: ChatRequest):
             yield json.dumps({
                 "type": "error",
                 "message": f"Agent execution failed: {type(exc).__name__}: {exc}",
+            }) + "\n"
+
+    return StreamingResponse(generate(), media_type="application/x-ndjson")
+
+
+# ---------------------------------------------------------------------------
+# A1 chat endpoints  (code-gen agent with XML tag trajectory)
+# ---------------------------------------------------------------------------
+
+import re as _re
+
+
+def _parse_a1_trajectory(all_messages) -> tuple[list[dict], str]:
+    """Parse A1 agent messages into trajectory steps.
+
+    A1 uses XML tags in AIMessage content:
+    - <think>...</think> → thinking step
+    - <execute>...</execute> → code step
+    - <observation>...</observation> → observation step
+    - <solution>...</solution> → solution step
+    - Free-form text → reasoning step
+    """
+    from langchain_core.messages import AIMessage, HumanMessage
+
+    trajectory = []
+    step_num = 0
+    final_response = ""
+
+    for msg in all_messages:
+        if isinstance(msg, HumanMessage):
+            # Skip user messages and correction prompts
+            continue
+
+        if not isinstance(msg, AIMessage):
+            continue
+
+        content = msg.content
+        if not isinstance(content, str) or not content.strip():
+            continue
+
+        # Check if this is an observation message (execution result)
+        obs_match = _re.search(r"<observation>(.*?)</observation>", content, _re.DOTALL)
+        if obs_match and content.strip().startswith("<observation>"):
+            step_num += 1
+            obs_content = obs_match.group(1).strip()
+            if len(obs_content) > 4000:
+                obs_content = obs_content[:4000] + "... [truncated]"
+            trajectory.append({
+                "step": step_num,
+                "type": "observation",
+                "content": obs_content,
+            })
+            continue
+
+        # Parse the AI-generated message for XML tags
+        remaining = content
+
+        # Extract <think> blocks
+        think_matches = list(_re.finditer(r"<think>(.*?)</think>", remaining, _re.DOTALL))
+        for match in think_matches:
+            step_num += 1
+            trajectory.append({
+                "step": step_num,
+                "type": "thinking",
+                "content": match.group(1).strip(),
+            })
+
+        # Extract <execute> blocks
+        execute_matches = list(_re.finditer(r"<execute>(.*?)</execute>", remaining, _re.DOTALL))
+        for match in execute_matches:
+            step_num += 1
+            code = match.group(1).strip()
+            # Detect language
+            language = "python"
+            if code.startswith("#!R") or code.startswith("# R code") or code.startswith("# R script"):
+                language = "r"
+            elif code.startswith("#!BASH") or code.startswith("# Bash script") or code.startswith("#!CLI"):
+                language = "bash"
+            trajectory.append({
+                "step": step_num,
+                "type": "code",
+                "content": code,
+                "language": language,
+            })
+
+        # Extract <solution> blocks
+        solution_match = _re.search(r"<solution>(.*?)</solution>", remaining, _re.DOTALL)
+        if solution_match:
+            step_num += 1
+            final_response = solution_match.group(1).strip()
+            trajectory.append({
+                "step": step_num,
+                "type": "solution",
+                "content": final_response,
+            })
+
+        # Check for free-form reasoning text (outside all XML tags)
+        stripped = remaining
+        for tag in ["think", "execute", "solution", "observation"]:
+            stripped = _re.sub(rf"<{tag}>.*?</{tag}>", "", stripped, flags=_re.DOTALL)
+        stripped = stripped.strip()
+        if stripped and not stripped.startswith("There are no tags"):
+            step_num += 1
+            trajectory.append({
+                "step": step_num,
+                "type": "reasoning",
+                "content": stripped,
+            })
+
+    # If no solution was found, use the last AI message content as response
+    if not final_response:
+        for msg in reversed(all_messages):
+            if isinstance(msg, AIMessage) and msg.content:
+                final_response = msg.content if isinstance(msg.content, str) else str(msg.content)
+                break
+
+    return trajectory, final_response
+
+
+@app.post("/chat/a1", response_model=ChatResponse)
+async def chat_a1(request: ChatRequest) -> ChatResponse:
+    """Chat with the BiOMNI A1 code-generation agent.
+
+    The A1 agent writes and executes Python/R/bash code to answer
+    the user's question, using planning and self-correction.
+    """
+    import asyncio
+
+    messages = request.messages
+    if not messages:
+        raise HTTPException(status_code=400, detail="messages list is empty")
+
+    user_messages = [m for m in messages if m.get("role") == "user"]
+    if not user_messages:
+        raise HTTPException(status_code=400, detail="No user message found")
+
+    # Build context from conversation history
+    prompt_parts = []
+    if len(messages) > 1:
+        prompt_parts.append("Previous conversation:")
+        for msg in messages[:-1]:
+            role = msg.get("role", "user").capitalize()
+            content = msg.get("content", "")
+            prompt_parts.append(f"{role}: {content}")
+        prompt_parts.append("")
+        prompt_parts.append("Current question:")
+    prompt_parts.append(user_messages[-1].get("content", ""))
+    full_prompt = "\n".join(prompt_parts)
+
+    try:
+        agent = _get_a1_agent(request.model)
+
+        def run_a1(prompt):
+            from langchain_core.messages import AIMessage
+            inputs = {"messages": [("user", prompt)], "next_step": None}
+            config = {"recursion_limit": 500, "configurable": {"thread_id": 42}}
+            all_messages = []
+            for s in agent.app.stream(inputs, stream_mode="values", config=config):
+                all_messages = s["messages"]
+            return all_messages
+
+        all_messages = await asyncio.to_thread(run_a1, full_prompt)
+
+        trajectory, final_response = _parse_a1_trajectory(all_messages)
+
+        return ChatResponse(
+            response=final_response,
+            tool_calls=[],
+            trajectory=[TrajectoryStep(**step) for step in trajectory],
+        )
+
+    except Exception as exc:
+        logger.error("A1 chat endpoint failed: %s", exc)
+        logger.debug(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"A1 agent execution failed: {type(exc).__name__}: {exc}",
+        )
+
+
+@app.post("/chat/a1/stream")
+async def chat_a1_stream(request: ChatRequest):
+    """Streaming A1 chat endpoint — returns NDJSON lines as the agent reasons."""
+    import asyncio
+
+    messages = request.messages
+    if not messages:
+        raise HTTPException(status_code=400, detail="messages list is empty")
+
+    user_messages = [m for m in messages if m.get("role") == "user"]
+    if not user_messages:
+        raise HTTPException(status_code=400, detail="No user message found")
+
+    prompt_parts = []
+    if len(messages) > 1:
+        prompt_parts.append("Previous conversation:")
+        for msg in messages[:-1]:
+            role = msg.get("role", "user").capitalize()
+            content = msg.get("content", "")
+            prompt_parts.append(f"{role}: {content}")
+        prompt_parts.append("")
+        prompt_parts.append("Current question:")
+    prompt_parts.append(user_messages[-1].get("content", ""))
+    full_prompt = "\n".join(prompt_parts)
+
+    req_model = request.model
+
+    def generate():
+        try:
+            from langchain_core.messages import AIMessage, HumanMessage
+
+            agent = _get_a1_agent(req_model)
+            inputs = {"messages": [("user", full_prompt)], "next_step": None}
+            config = {"recursion_limit": 500, "configurable": {"thread_id": 42}}
+
+            step_counter = 0
+            all_steps = []
+            final_response = ""
+            processed_count = 0
+
+            for chunk in agent.app.stream(inputs, stream_mode="values", config=config):
+                chunk_messages = chunk.get("messages", [])
+                new_messages = chunk_messages[processed_count:]
+                processed_count = len(chunk_messages)
+
+                for msg in new_messages:
+                    if isinstance(msg, HumanMessage):
+                        continue
+
+                    if not isinstance(msg, AIMessage):
+                        continue
+
+                    content = msg.content
+                    if not isinstance(content, str) or not content.strip():
+                        continue
+
+                    # Observation message
+                    obs_match = _re.search(r"<observation>(.*?)</observation>", content, _re.DOTALL)
+                    if obs_match and content.strip().startswith("<observation>"):
+                        step_counter += 1
+                        obs_content = obs_match.group(1).strip()
+                        if len(obs_content) > 4000:
+                            obs_content = obs_content[:4000] + "... [truncated]"
+                        step = {"step": step_counter, "type": "observation", "content": obs_content}
+                        all_steps.append(step)
+                        yield json.dumps({"type": "trajectory_step", "step": step}) + "\n"
+                        continue
+
+                    # Parse XML tags from AI message
+                    think_matches = list(_re.finditer(r"<think>(.*?)</think>", content, _re.DOTALL))
+                    for match in think_matches:
+                        step_counter += 1
+                        step = {"step": step_counter, "type": "thinking", "content": match.group(1).strip()}
+                        all_steps.append(step)
+                        yield json.dumps({"type": "trajectory_step", "step": step}) + "\n"
+
+                    execute_matches = list(_re.finditer(r"<execute>(.*?)</execute>", content, _re.DOTALL))
+                    for match in execute_matches:
+                        step_counter += 1
+                        code = match.group(1).strip()
+                        language = "python"
+                        if code.startswith("#!R") or code.startswith("# R code"):
+                            language = "r"
+                        elif code.startswith("#!BASH") or code.startswith("# Bash script") or code.startswith("#!CLI"):
+                            language = "bash"
+                        step = {"step": step_counter, "type": "code", "content": code, "language": language}
+                        all_steps.append(step)
+                        yield json.dumps({"type": "trajectory_step", "step": step}) + "\n"
+
+                    solution_match = _re.search(r"<solution>(.*?)</solution>", content, _re.DOTALL)
+                    if solution_match:
+                        step_counter += 1
+                        final_response = solution_match.group(1).strip()
+                        step = {"step": step_counter, "type": "solution", "content": final_response}
+                        all_steps.append(step)
+                        yield json.dumps({"type": "trajectory_step", "step": step}) + "\n"
+
+                    # Free-form reasoning
+                    stripped = content
+                    for tag in ["think", "execute", "solution", "observation"]:
+                        stripped = _re.sub(rf"<{tag}>.*?</{tag}>", "", stripped, flags=_re.DOTALL)
+                    stripped = stripped.strip()
+                    if stripped and not stripped.startswith("There are no tags"):
+                        step_counter += 1
+                        step = {"step": step_counter, "type": "reasoning", "content": stripped}
+                        all_steps.append(step)
+                        final_response = final_response or stripped
+                        yield json.dumps({"type": "trajectory_step", "step": step}) + "\n"
+
+            yield json.dumps({
+                "type": "final_response",
+                "response": final_response,
+                "trajectory": all_steps,
+                "tool_calls": [],
+            }) + "\n"
+
+        except Exception as exc:
+            logger.error("A1 chat stream failed: %s", exc)
+            logger.debug(traceback.format_exc())
+            yield json.dumps({
+                "type": "error",
+                "message": f"A1 agent execution failed: {type(exc).__name__}: {exc}",
             }) + "\n"
 
     return StreamingResponse(generate(), media_type="application/x-ndjson")
