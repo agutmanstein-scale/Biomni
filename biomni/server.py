@@ -37,6 +37,53 @@ from biomni.utils import read_module2api
 logger = logging.getLogger("biomni.server")
 
 # ---------------------------------------------------------------------------
+# Patch langchain's tool-schema conversion so array types always have 'items'.
+# GPT-5 and Gemini reject tool schemas where Tuple-typed parameters produce
+# {"type": "array", "prefixItems": [...]} without an "items" field.
+# ---------------------------------------------------------------------------
+import langchain_core.utils.function_calling as _fc_mod  # noqa: E402
+
+
+def _fix_array_items(schema: dict) -> dict:
+    """Ensure every 'type: array' in a JSON schema has an 'items' field.
+
+    GPT-5 and Gemini reject tool schemas with array properties missing 'items',
+    while Claude is lenient.  This walks the schema recursively and adds
+    ``items: {"type": "string"}`` as a safe default wherever it's absent.
+    """
+    if not isinstance(schema, dict):
+        return schema
+    if schema.get("type") == "array" and "items" not in schema:
+        schema["items"] = {"type": "string"}
+    for key in ("properties", "definitions", "$defs"):
+        block = schema.get(key)
+        if isinstance(block, dict):
+            for v in block.values():
+                _fix_array_items(v)
+    for key in ("items", "additionalProperties"):
+        if isinstance(schema.get(key), dict):
+            _fix_array_items(schema[key])
+    for key in ("allOf", "anyOf", "oneOf"):
+        variants = schema.get(key)
+        if isinstance(variants, list):
+            for v in variants:
+                _fix_array_items(v)
+    return schema
+
+
+_orig_convert_to_openai_function = _fc_mod.convert_to_openai_function
+
+
+def _patched_convert_to_openai_function(function, *, strict=None):
+    result = _orig_convert_to_openai_function(function, strict=strict)
+    if isinstance(result, dict) and "parameters" in result:
+        _fix_array_items(result["parameters"])
+    return result
+
+
+_fc_mod.convert_to_openai_function = _patched_convert_to_openai_function
+
+# ---------------------------------------------------------------------------
 # Paths derived from environment
 # ---------------------------------------------------------------------------
 _BASE_PATH = os.environ.get("BIOMNI_DATA_PATH", "./data")

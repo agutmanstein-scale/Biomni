@@ -55,9 +55,8 @@ def get_llm(
         model = "claude-3-5-sonnet-20241022"
     if temperature is None:
         temperature = 0.7
-    # Claude models do not support reasoning_effort; clear it to avoid API errors
-    if model and model.startswith("claude-") and reasoning_effort:
-        reasoning_effort = None
+    # NOTE: reasoning_effort for Claude is handled per-source below.
+    # Direct Anthropic API doesn't support it, but LiteLLM proxy (Custom source) does.
     if api_key is None:
         api_key = "EMPTY"
     # Auto-detect source from model name if not specified
@@ -188,6 +187,7 @@ def get_llm(
             except Exception as e:
                 print(f"Note: Could not load ANTHROPIC_API_KEY from bash_profile: {e}")
 
+        reasoning_effort = None  # Direct Anthropic API doesn't support reasoning_effort
         return ChatAnthropic(
             model=model,
             temperature=temperature,
@@ -265,6 +265,39 @@ def get_llm(
                 "langchain-openai package is required for custom models. Install with: pip install langchain-openai"
             )
         assert base_url is not None, "base_url must be provided for customly served LLMs"
+
+        # GPT-5 models need Responses API for reasoning_effort
+        model_basename = model.split("/")[-1] if "/" in model else model
+        if model_basename.startswith("gpt-5"):
+            class _ChatOpenAIResponsesNoStop(ChatOpenAI):
+                def _get_request_payload(self, input_, *, stop=None, **kwargs):  # type: ignore[override]
+                    payload = super()._get_request_payload(input_, stop=stop, **kwargs)
+                    try:
+                        if hasattr(self, "_use_responses_api") and self._use_responses_api(payload):  # type: ignore[attr-defined]
+                            payload.pop("stop", None)
+                            payload.pop("temperature", None)
+                    except Exception:
+                        payload.pop("stop", None)
+                        payload.pop("temperature", None)
+                    return payload
+
+            oai_kwargs: dict = {}
+            if reasoning_effort:
+                oai_kwargs["reasoning_effort"] = reasoning_effort
+            resp_kwargs: dict = dict(
+                model=model,
+                temperature=1,
+                use_responses_api=True,
+                output_version="v0",
+                base_url=base_url,
+                api_key=api_key,
+                max_tokens=16384 if reasoning_effort else 8192,
+            )
+            if oai_kwargs:
+                resp_kwargs["model_kwargs"] = oai_kwargs
+            return _ChatOpenAIResponsesNoStop(**resp_kwargs)
+
+        # Non-GPT-5 models (Claude, Gemini via LiteLLM) use chat/completions
         extra_kwargs: dict = {}
         extra_body: dict = {}
         max_tok = 8192
@@ -285,8 +318,7 @@ def get_llm(
             kwargs["model_kwargs"] = extra_kwargs
         if extra_body:
             kwargs["extra_body"] = extra_body
-        llm = ChatOpenAI(**kwargs)
-        return llm
+        return ChatOpenAI(**kwargs)
 
     else:
         raise ValueError(
