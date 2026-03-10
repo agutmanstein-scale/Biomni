@@ -49,6 +49,34 @@ Defined in `.circleci/generate_config.py`. Triggers on master merges touching `p
 
 Set in CircleCI project settings, not in code.
 
+## Checking Existing Image Tags
+
+**Always check which tags already exist in ECR before building**, to avoid accidentally overwriting a tag that's in use (e.g. by a running Modal deployment or EC2 container).
+
+```bash
+# List all biomni image tags in ECR, sorted by push date (newest first)
+aws ecr describe-images \
+  --repository-name agent-environment \
+  --region us-west-2 \
+  --query 'sort_by(imageDetails, &imagePushedAt)[*].{tag:imageTags[0],pushed:imagePushedAt,sizeMB:imageSizeInBytes}' \
+  --output table \
+  | grep biomni
+
+# Quick check: does a specific tag exist?
+aws ecr describe-images \
+  --repository-name agent-environment \
+  --region us-west-2 \
+  --image-ids imageTag=biomni-1.0.26 \
+  2>/dev/null && echo "EXISTS" || echo "AVAILABLE"
+```
+
+Cross-reference with what's currently deployed:
+- **Modal dev**: check `_DEFAULT_IMAGE_TAG` in `~/Code/professional-agents/modal_biomni.py`
+- **Modal prod**: same file, the `else` branch
+- **EC2 container**: `ssh osworld-evaluations 'docker ps --format "{{.Image}}"'`
+
+Pick a tag that doesn't collide with any in-use image.
+
 ## Manual Fast Build (no CI)
 
 For pushing source changes without waiting for CI (e.g. testing on Modal before merging):
