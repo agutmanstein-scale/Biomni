@@ -55,6 +55,9 @@ def get_llm(
         model = "claude-3-5-sonnet-20241022"
     if temperature is None:
         temperature = 0.7
+    # Claude models do not support reasoning_effort; clear it to avoid API errors
+    if model and model.startswith("claude-") and reasoning_effort:
+        reasoning_effort = None
     if api_key is None:
         api_key = "EMPTY"
     # Auto-detect source from model name if not specified

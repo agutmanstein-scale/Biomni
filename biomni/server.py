@@ -29,7 +29,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from biomni.utils import read_module2api
@@ -371,9 +371,12 @@ def _load_tools() -> None:
 # FastAPI app
 # ---------------------------------------------------------------------------
 
+_shutting_down = False
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _episode_id
+    global _episode_id, _shutting_down
     logging.basicConfig(level=logging.INFO,
                         format="%(levelname)s  %(name)s  %(message)s")
     logger.info("Starting Biomni tool server …")
@@ -382,7 +385,8 @@ async def lifespan(app: FastAPI):
     _episode_id = str(uuid.uuid4())
     logger.info("Ready — %d tools available", len(_tool_functions))
     yield
-    logger.info("Shutting down Biomni tool server")
+    _shutting_down = True
+    logger.info("Shutting down — waiting for in-flight requests …")
 
 
 app = FastAPI(
@@ -501,6 +505,10 @@ async def reset_state() -> dict:
 
 @app.get("/health")
 async def health() -> dict:
+    if _shutting_down:
+        return JSONResponse(
+            {"status": "shutting_down"}, status_code=503
+        )
     return {
         "status": "health_and_client_connection_ok",
         "tools_loaded": len(_tool_functions),
@@ -709,6 +717,7 @@ class ChatResponse(BaseModel):
 
 
 # Model-keyed agent pools (heavy startup, reuse across requests)
+import asyncio as _asyncio
 import threading
 
 _chat_agents: dict = {}  # {model_name: ReactAgent}
@@ -716,6 +725,70 @@ _chat_agents_lock = threading.Lock()
 
 _a1_agents: dict = {}  # {model_name: A1Agent}
 _a1_agents_lock = threading.Lock()
+
+
+async def _heartbeat_stream(sync_gen, heartbeat_interval=10):
+    """Wrap a sync NDJSON generator with periodic heartbeat messages.
+
+    Runs the sync generator in a background thread. If no data arrives
+    within heartbeat_interval seconds, yields a heartbeat with context
+    about what the agent is currently doing.
+    """
+    queue: _asyncio.Queue = _asyncio.Queue()
+    sentinel = object()
+    loop = _asyncio.get_event_loop()
+
+    def _run():
+        try:
+            for item in sync_gen:
+                _asyncio.run_coroutine_threadsafe(queue.put(item), loop)
+        except Exception as exc:
+            _asyncio.run_coroutine_threadsafe(
+                queue.put(json.dumps({"type": "error", "message": str(exc)}) + "\n"),
+                loop,
+            )
+        finally:
+            _asyncio.run_coroutine_threadsafe(queue.put(sentinel), loop)
+
+    thread = threading.Thread(target=_run, daemon=True)
+    thread.start()
+
+    last_context = "Starting up..."
+    elapsed = 0
+
+    while True:
+        try:
+            item = await _asyncio.wait_for(queue.get(), timeout=heartbeat_interval)
+            if item is sentinel:
+                break
+            # Track context from real messages for informative heartbeats
+            try:
+                parsed = json.loads(item)
+                if parsed.get("type") == "trajectory_step":
+                    step = parsed.get("step", {})
+                    step_type = step.get("type", "")
+                    if step_type == "tool_call":
+                        last_context = f"Executing tool: {step.get('tool_name', 'unknown')}..."
+                    elif step_type == "tool_result":
+                        last_context = "Processing tool results..."
+                    elif step_type in ("reasoning", "thinking"):
+                        last_context = "Model is reasoning..."
+                    elif step_type == "code":
+                        last_context = "Generating code..."
+            except (json.JSONDecodeError, KeyError):
+                pass
+            elapsed = 0
+            yield item
+        except _asyncio.TimeoutError:
+            elapsed += heartbeat_interval
+            hb = json.dumps({
+                "type": "heartbeat",
+                "elapsed_s": elapsed,
+                "message": last_context,
+            })
+            # Pad to ~4KB so reverse proxies (Modal/nginx) flush immediately
+            hb += " " * max(0, 4096 - len(hb) - 1) + "\n"
+            yield hb
 
 
 def _build_safe_tools():
@@ -787,6 +860,33 @@ def _get_chat_agent(model: str | None = None):
         return agent
 
 
+class _MessageFixingLLM:
+    """Wraps a LangChain ChatModel to convert consecutive AIMessages to
+    HumanMessages, fixing LiteLLM/Anthropic 'assistant prefill' errors."""
+
+    def __init__(self, llm):
+        object.__setattr__(self, "_llm", llm)
+
+    def invoke(self, messages, **kwargs):
+        from langchain_core.messages import AIMessage, HumanMessage
+        fixed = []
+        for msg in messages:
+            if isinstance(msg, AIMessage) and fixed and isinstance(fixed[-1], AIMessage):
+                fixed.append(HumanMessage(content=msg.content))
+            else:
+                fixed.append(msg)
+        return self._llm.invoke(fixed, **kwargs)
+
+    def __getattr__(self, name):
+        return getattr(self._llm, name)
+
+    def __setattr__(self, name, value):
+        if name == "_llm":
+            object.__setattr__(self, name, value)
+        else:
+            setattr(self._llm, name, value)
+
+
 def _get_a1_agent(model: str | None = None):
     """Lazily initialize the A1 code-gen agent for chat, pooled by model."""
     from biomni.config import default_config
@@ -802,15 +902,29 @@ def _get_a1_agent(model: str | None = None):
 
         logger.info("A1 agent initializing for model=%s", model)
 
-        agent = A1(
-            llm=model,
-            source=default_config.source,
-            base_url=default_config.base_url,
-            api_key=default_config.api_key,
-            commercial_mode=default_config.commercial_mode,
-            timeout_seconds=default_config.timeout_seconds or 600,
-            expected_data_lake_files=[],  # Skip downloads in server mode
-        )
+        # A1 appends <observation> as AIMessage (consecutive assistant messages).
+        # LiteLLM/Custom source rejects this as "assistant prefill" on Anthropic.
+        # Patch the LLM to convert consecutive AIMessages to HumanMessages.
+        # Also disable reasoning_effort (incompatible with A1's stop_sequences).
+        saved_re = default_config.reasoning_effort
+        default_config.reasoning_effort = None
+        try:
+            agent = A1Agent(
+                llm=model,
+                source=default_config.source,
+                base_url=default_config.base_url,
+                api_key=default_config.api_key,
+                commercial_mode=default_config.commercial_mode,
+                timeout_seconds=default_config.timeout_seconds or 600,
+                expected_data_lake_files=[],  # Skip downloads in server mode
+            )
+        finally:
+            default_config.reasoning_effort = saved_re
+
+        # Wrap LLM to fix consecutive AIMessages for LiteLLM compatibility.
+        # A1's execute node adds <observation> as AIMessage, creating
+        # consecutive assistant messages that Anthropic via LiteLLM rejects.
+        agent.llm = _MessageFixingLLM(agent.llm)
 
         _a1_agents[model] = agent
         return agent
@@ -1155,7 +1269,7 @@ async def chat_stream(request: ChatRequest):
                 "message": f"Agent execution failed: {type(exc).__name__}: {exc}",
             }) + "\n"
 
-    return StreamingResponse(generate(), media_type="application/x-ndjson")
+    return StreamingResponse(_heartbeat_stream(generate()), media_type="application/x-ndjson")
 
 
 # ---------------------------------------------------------------------------
@@ -1457,4 +1571,4 @@ async def chat_a1_stream(request: ChatRequest):
                 "message": f"A1 agent execution failed: {type(exc).__name__}: {exc}",
             }) + "\n"
 
-    return StreamingResponse(generate(), media_type="application/x-ndjson")
+    return StreamingResponse(_heartbeat_stream(generate()), media_type="application/x-ndjson")
