@@ -266,9 +266,10 @@ def get_llm(
             )
         assert base_url is not None, "base_url must be provided for customly served LLMs"
 
-        # GPT-5 models need Responses API for reasoning_effort
+        # GPT-5 models need Responses API only when reasoning_effort is set;
+        # regular chat/completions works fine (and is much faster) without it.
         model_basename = model.split("/")[-1] if "/" in model else model
-        if model_basename.startswith("gpt-5"):
+        if model_basename.startswith("gpt-5") and reasoning_effort:
             class _ChatOpenAIResponsesNoStop(ChatOpenAI):
                 def _get_request_payload(self, input_, *, stop=None, **kwargs):  # type: ignore[override]
                     payload = super()._get_request_payload(input_, stop=stop, **kwargs)
@@ -281,23 +282,18 @@ def get_llm(
                         payload.pop("temperature", None)
                     return payload
 
-            oai_kwargs: dict = {}
-            if reasoning_effort:
-                oai_kwargs["reasoning_effort"] = reasoning_effort
-            resp_kwargs: dict = dict(
+            return _ChatOpenAIResponsesNoStop(
                 model=model,
                 temperature=1,
                 use_responses_api=True,
                 output_version="v0",
                 base_url=base_url,
                 api_key=api_key,
-                max_tokens=16384 if reasoning_effort else 8192,
+                max_tokens=16384,
+                model_kwargs={"reasoning_effort": reasoning_effort},
             )
-            if oai_kwargs:
-                resp_kwargs["model_kwargs"] = oai_kwargs
-            return _ChatOpenAIResponsesNoStop(**resp_kwargs)
 
-        # Non-GPT-5 models (Claude, Gemini via LiteLLM) use chat/completions
+        # All other models (Claude, Gemini, GPT-5 without reasoning) use chat/completions
         extra_kwargs: dict = {}
         extra_body: dict = {}
         max_tok = 8192
